@@ -2,6 +2,7 @@ import * as ort from 'onnxruntime-web/webgpu';
 import { decode, iou, letterbox } from './math';
 import { loadAsset, sha256 } from './assets';
 import { MODEL, VERIFIER } from './model';
+import {consolidateRegions,establishedClasses} from './regions';
 import type { DetectedObject } from '@lib/types';
 
 let session:ort.InferenceSession|null=null,verifier:ort.InferenceSession|null=null;
@@ -9,7 +10,6 @@ let embeddings:Float32Array,loading:Promise<void>|null=null,provider='wasm';
 const status=(message:string)=>postMessage({type:'status',message});
 // These well-trained geometry classes should not be renamed from a crop whose clothing or
 // background dominates CLIP. Ambiguous everyday goods still require independent matching.
-const establishedClasses=new Set(['person','bus','car','truck','train','bicycle','motorcycle','airplane','boat']);
 
 async function init(override?:string){
  ort.env.wasm.numThreads=1;
@@ -47,6 +47,10 @@ function classify(features:Float32Array){
  }
  return {best,margin:Math.max(0,best-runnerUp),classId};
 }
+function relatedLabels(a:number,b:number){
+ let cosine=0;for(let k=0;k<VERIFIER.embeddingSize;k++)cosine+=embeddings[a*VERIFIER.embeddingSize+k]*embeddings[b*VERIFIER.embeddingSize+k];
+ return cosine>=.95;
+}
 async function embed(canvas:OffscreenCanvas):Promise<Float32Array>{
  const tensor=tensorFromCanvas(canvas),outputs=await verifier!.run({[verifier!.inputNames[0]]:tensor});
  try{return new Float32Array(outputs[verifier!.outputNames[0]].data as Float32Array);}
@@ -64,9 +68,21 @@ async function verifyLabel(bitmap:ImageBitmap,object:DetectedObject,context:Retu
  // but must never overwrite every secondary box with the scene's dominant object.
  const corroborated=MODEL.labels[match.classId]===object.object_name;
  if(context&&!corroborated&&context.best>match.best)match=context;
- // A secondary region needs stronger independent evidence: small caps, plinths and
- // background details otherwise get forced into arbitrary names from a large vocabulary.
- if(match.best<.22||match.classId<0||(!context&&!corroborated&&(match.best<.28||match.margin<.015)))return null;
+ if(match.best<.22||match.classId<0)return null;
+ // Weak region scores must not force every secondary object out of a crowded scene.
+ // For close label alternatives, require stability under a small change in the SAME crop,
+ // rather than borrowing the entire scene's dominant label for unrelated objects.
+ if(!context&&!corroborated){
+  if(match.best<.24)return null;
+  if(match.margin<.015){
+   if(match.best<.25)return null;
+   const px=w*.1,py=h*.1,left=Math.max(0,x1-px),top=Math.max(0,y1-py),right=Math.min(bitmap.width,x2+px),bottom=Math.min(bitmap.height,y2+py);
+   const expanded=new OffscreenCanvas(size,size),ec=expanded.getContext('2d')!,sw=right-left,sh=bottom-top,s=Math.min(size/sw,size/sh);
+   ec.fillStyle='white';ec.fillRect(0,0,size,size);ec.drawImage(bitmap,left,top,sw,sh,(size-sw*s)/2,(size-sh*s)/2,sw*s,sh*s);
+   const nearby=classify(await embed(expanded));
+   if(nearby.best<.24||(nearby.classId!==match.classId&&!relatedLabels(nearby.classId,match.classId)))return null;
+  }
+ }
  return {...object,class_id:match.classId,object_name:MODEL.labels[match.classId],label_similarity:match.best,label_margin:match.margin};
 }
 
@@ -83,19 +99,24 @@ self.onmessage=async({data})=>{
    try{
     outputs=await session.run({[session.inputNames[0]]:tensor});const values=Object.values(outputs),pred=values.find(v=>v.dims.length===3),proto=values.find(v=>v.dims.length===4);
     if(!pred||!proto)throw new Error('Segmentation outputs are missing from this model.');
-    objects=decode(pred.data as Float32Array,pred.dims,proto.data as Float32Array,proto.dims,width,height,.1,MODEL);
+    objects=decode(pred.data as Float32Array,pred.dims,proto.data as Float32Array,proto.dims,width,height,.1,MODEL,20);
    }finally{tensor.dispose();Object.values(outputs).forEach(t=>t.dispose());}
-   const verified:DetectedObject[]=[];
+   const verified:{object:DetectedObject;geometryMatch:boolean}[]=[];
    const scene=new OffscreenCanvas(VERIFIER.inputSize,VERIFIER.inputSize),sc=scene.getContext('2d')!;
    const side=Math.min(width,height);sc.drawImage(bitmap,(width-side)/2,(height-side)/2,side,side,0,0,VERIFIER.inputSize,VERIFIER.inputSize);
    const context=classify(await embed(scene));
+   // Global context is safe only for a single cluster. A separate item elsewhere in
+   // the scene must get its own label, even if the leading proposal is a small part.
+   const leading=objects[0];
+   const multipleRegions=leading&&objects.some(o=>o.confidence>=.4&&iou(o.bounding_box,leading.bounding_box)<.05);
    // The detector proposes geometry. Independent crop embeddings determine the label.
    for(const [index,object] of objects.slice(0,20).entries()){
-    if(establishedClasses.has(object.object_name)&&object.confidence>=.65){verified.push(object);continue;}
-    const result=await verifyLabel(bitmap,object,index===0?context:null);if(!result)continue;
-    if(!verified.some(other=>other.class_id===result.class_id&&iou(other.bounding_box,result.bounding_box)>.45))verified.push(result);
+    if(establishedClasses.has(object.object_name)&&object.confidence>=.65){verified.push({object,geometryMatch:true});continue;}
+    const result=await verifyLabel(bitmap,object,index===0&&!multipleRegions?context:null);if(!result)continue;
+    const geometryMatch=object.class_id===result.class_id||relatedLabels(object.class_id,result.class_id)||result.object_name.split(' ').includes(object.object_name);
+    verified.push({object:result,geometryMatch});
    }
-   postMessage({type:'result',objects:verified,latency:performance.now()-start,id:data.id});
+   postMessage({type:'result',objects:consolidateRegions(verified,relatedLabels),latency:performance.now()-start,id:data.id});
   }finally{bitmap.close();}
  }catch(error){postMessage({type:'error',message:error instanceof Error?error.message:String(error),id:data.id});}
 };

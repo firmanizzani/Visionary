@@ -19,7 +19,7 @@ test('real local ONNX segmentation, thresholds, mode reuse and upload validation
  const input=page.locator('input[type=file]');
  await input.setInputFiles({name:'bad.txt',mimeType:'text/plain',buffer:Buffer.from('not an image')});await expect(page.getByRole('alert')).toContainText('JPG');
  await input.setInputFiles({name:'large.jpg',mimeType:'image/jpeg',buffer:Buffer.alloc(10*1024*1024+1)});await expect(page.getByRole('alert')).toContainText('10 MB');
- await input.setInputFiles(fixture);await expect(page.getByAltText('Selected image')).toBeVisible();
+ await input.setInputFiles(fixture);await expect(page.getByAltText('Selection for object detection')).toBeVisible();
  await page.getByRole('button',{name:'Detect objects',exact:true}).click();
  await expect(page.getByText('Analysis complete',{exact:true})).toBeVisible({timeout:150000});
  await expect(page.locator('.results-summary>strong')).not.toHaveText('0');

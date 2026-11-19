@@ -1,5 +1,34 @@
 # Verification
 
+## Camera playback and multiple-item update (19 November 2026)
+
+Final Node production build passed all **7 Playwright scenarios** (1.5 minutes), including
+the existing real-service account/save/history flow and both new camera scenarios. Svelte check
+reported **0 errors, 0 warnings**, and all **10 frontend unit tests passed**.
+
+The previous live view hid the video after the first result and replaced it with periodic still
+images. Camera preview now remains native video while AI analyzes separate snapshots. An explicit
+Analyzed frame control shows aligned overlays; Stop retains the analyzed snapshot and restart
+returns to live video. No per-result JPEG encoding is performed on the main thread.
+
+The slow-worker camera regression delays each result by 1.8s and checks that native playback time
+and decoded frame count keep advancing, that the video remains shown after results, and that
+analyzed/live controls, stop/restart, and widths 1440/768/390 work. It tests playback independence,
+not physical webcam FPS or a real-time AI throughput guarantee.
+
+The actual model camera regression composes the four ignored local examples into one frame
+(`ml/prepare_camera_fixture.py`) and supplies it via a canvas MediaStream. At 50%, wallet, perfume
+bottle, and sunglasses appear. At 35%, spotlight also appears, one result per item. This composed
+fixture is a targeted regression, not a natural-scene accuracy benchmark. Four region consolidation
+tests cover separate/overlapping instances, synonym duplicates, contained components, and retention
+of items held by a person. The full frontend suite now has 10 tests.
+
+Existing app design is retained (framed-sheet, seed 1525734396). Browser inspection reports 0 FAIL;
+existing small secondary text and marginal shell text contrast remain warnings. New view controls
+use 13px labels and phone touch targets of 44px. Screenshots of the working camera are checked at
+all three widths. Inference can still take seconds on WASM; overlapping/small objects remain difficult,
+and suppression heuristics can remove a legitimate item contained inside another item.
+
 ## Broad-vocabulary update (19 November 2026)
 
 The scanner now uses YOLOE-26s plus MobileCLIP2-S0 with 1,227 fixed text prototypes.

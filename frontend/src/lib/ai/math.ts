@@ -23,7 +23,7 @@ export function decodeRle(runs: number[], length: number) {
 export type DecoderContract={labels:readonly string[];inputSize:number;maskChannels:number};
 const LEGACY:DecoderContract={labels:LABELS,inputSize:640,maskChannels:32};
 // Contract is generated from the actual export. New model classes must never use COCO's indices.
-export function decode(pred: Float32Array, dims: readonly number[], proto: Float32Array, pdims: readonly number[], width: number, height: number, threshold=.1, contract:DecoderContract=LEGACY): DetectedObject[] {
+export function decode(pred: Float32Array, dims: readonly number[], proto: Float32Array, pdims: readonly number[], width: number, height: number, threshold=.1, contract:DecoderContract=LEGACY, maxDetections=100): DetectedObject[] {
  const {labels,inputSize,maskChannels}=contract;
  if(!labels.length || dims.length!==3 || dims[0]!==1 || dims[1]!==4+labels.length+maskChannels || pdims.length!==4 || pdims[0]!==1 || pdims[1]!==maskChannels || pdims[2]<1 || pdims[3]<1 || pred.length!==dims.reduce((a,b)=>a*b,1) || proto.length!==pdims.reduce((a,b)=>a*b,1)) throw new Error('Model outputs do not match the installed model manifest. Reload the updated application and model together.');
  const n=dims[2], {padX,padY,resizedWidth,resizedHeight}=letterbox(width,height,inputSize);
@@ -38,7 +38,7 @@ export function decode(pred: Float32Array, dims: readonly number[], proto: Float
  }
  candidates.sort((a,b)=>b.score-a.score);
  const kept: typeof candidates=[];
- for(const c of candidates.slice(0,3000)){ if(!kept.some(k=>{const overlap=iou(k.box,c.box);return k.cls===c.cls?overlap>.45:overlap>.9;})) kept.push(c); if(kept.length>=100) break; }
+ for(const c of candidates.slice(0,3000)){ if(!kept.some(k=>{const overlap=iou(k.box,c.box);return k.cls===c.cls?overlap>.45:overlap>.9;})) kept.push(c); if(kept.length>=maxDetections) break; }
  return kept.map(c=>{
   // 160px masks in original-image aspect ratio, RLE keeps history bounded.
   const ph=pdims[2],pw=pdims[3],mw=Math.max(1,Math.min(160,Math.round(resizedWidth*pw/inputSize))), mh=Math.max(1,Math.min(160,Math.round(resizedHeight*ph/inputSize)));

@@ -33,11 +33,19 @@ selects a different end-to-end branch and must not be substituted without changi
 The decoder reads class count, input size and mask channels from the manifest and validates shapes.
 
 MobileCLIP2 image input: `[1,3,256,256]`, RGB float32 0–1, zero mean/unit std.
-Output is a normalized 512-dimensional vector. Region crops are letterboxed rather than expanded
-over neighboring objects. The leading ambiguous region can use scene context. Scores compare
-against the shipped normalized prototype matrix. Secondary uncertain matches are conservatively
-suppressed. High-confidence people and common vehicles retain their YOLO labels to avoid replacing
-a person's label with a clothing/background category. Up to 20 region proposals are examined per frame.
+Output is a normalized 512-dimensional vector. Region crops are letterboxed. Ambiguous secondary
+matches require label stability under a small expansion of the same region. Text prototypes with
+cosine similarity >= .95 can corroborate closely related names. The leading region may use global
+context only when high-score proposals do not cover spatially separate items. Scores compare
+against the shipped normalized prototype matrix. Contained component proposals are suppressed and
+overlapping competing labels are consolidated; spatially separate instances remain separate.
+High-confidence people and common vehicles retain their YOLO labels to avoid replacing a person's
+label with a clothing/background category. Up to 20 region proposals and masks are examined per frame.
+
+Camera playback uses the native video surface, independently of inference. Analyzed frame explicitly
+shows the last immutable snapshot with its aligned overlays; saving always uses that snapshot.
+Frames are sampled at a maximum long edge of 960px, with one inference in flight and at least 100ms
+between analyses. JPEG encoding happens on save rather than on every analyzed frame.
 
 Localization confidence and label cosine similarity are separate measurements. Neither is a calibrated
 probability that a name is correct. Close alternatives are marked uncertain. Similarity thresholds are
