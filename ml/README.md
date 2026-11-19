@@ -42,8 +42,10 @@ overlapping competing labels are consolidated; spatially separate instances rema
 High-confidence people and common vehicles retain their YOLO labels to avoid replacing a person's
 label with a clothing/background category. Up to 20 region proposals and masks are examined per frame.
 
-Camera playback uses the native video surface, independently of inference. Analyzed frame explicitly
-shows the last immutable snapshot with its aligned overlays; saving always uses that snapshot.
+Camera playback uses the native video surface, independently of inference, with the latest detection
+overlay in the same aspect-ratio container. There is one live view, with no Analyzed frame selector.
+Overlays may trail moving objects and expire 3-10 seconds after their last result, depending on latency.
+Stop retains the last immutable analyzed snapshot with aligned overlays; saving always uses that snapshot.
 Frames are sampled at a maximum long edge of 960px, with one inference in flight and at least 100ms
 between analyses. JPEG encoding happens on save rather than on every analyzed frame.
 

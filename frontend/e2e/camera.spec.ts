@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,existsSync,readFileSync} from 'node:fs';
 import path from 'node:path';
 
-test('camera remains live during slow inference and analyzed frames are explicit',async({page})=>{
+test('camera keeps playing with visible detection overlays during slow inference',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  // Deliberately slow model: playback must remain independent of result delivery.
  await page.route(/inference\.worker.*\.(?:js|ts)(?:\?.*)?$/,route=>route.fulfill({contentType:'text/javascript',body:`
@@ -25,28 +25,30 @@ test('camera remains live during slow inference and analyzed frames are explicit
  const frames=await video.evaluate((v:HTMLVideoElement)=>v.getVideoPlaybackQuality().totalVideoFrames);
  await expect(page.locator('.object-counts')).toContainText('wallet');
  await expect(page.locator('.count-pill')).toHaveText('2');
- await expect(video).toBeVisible();await expect(video).not.toHaveClass(/preview-hidden/);
+ await expect(video).toBeVisible();await expect(page.locator('.live-camera')).not.toHaveClass(/preview-hidden/);
  expect(await video.evaluate((v:HTMLVideoElement)=>v.currentTime)).toBeGreaterThan(time+1);
  expect(await video.evaluate((v:HTMLVideoElement)=>v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(frames+5);
  await expect(page.getByLabel('Analyzed camera frame')).toHaveCount(0);
+ await expect(page.locator('.live-camera .detection-overlay')).toBeVisible();
+ expect(await page.locator('.live-camera .detection-overlay').evaluate((c:HTMLCanvasElement)=>c.getContext('2d')!.getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0))).toBe(true);
+ const overlayTime=await video.evaluate((v:HTMLVideoElement)=>v.currentTime);
+ await expect.poll(()=>video.evaluate((v:HTMLVideoElement)=>v.currentTime)).toBeGreaterThan(overlayTime+.5);
  mkdirSync('../.taste-skill/camera',{recursive:true});
  for(const width of [1440,768,390]){
   await page.setViewportSize({width,height:900});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const bounds=await page.evaluate(()=>{const v=document.querySelector('video')!.getBoundingClientRect(),o=document.querySelector('.live-camera .detection-overlay')!.getBoundingClientRect();return [v.x-o.x,v.y-o.y,v.width-o.width,v.height-o.height];});
+  expect(bounds.every(d=>Math.abs(d)<1)).toBe(true);
   await page.screenshot({path:`../.taste-skill/camera/live-${width}.png`,fullPage:true,animations:'disabled'});
  }
- await page.getByRole('button',{name:'Analyzed frame',exact:true}).click();
- await expect(page.getByLabel('Analyzed camera frame')).toBeVisible();
- await expect(page.locator('.detection-overlay')).toBeVisible();
- await page.getByRole('button',{name:'Live preview',exact:true}).click();
- await expect(video).toBeVisible();await expect(video).not.toHaveClass(/preview-hidden/);
+ await expect(page.getByRole('button',{name:'Analyzed frame',exact:true})).toHaveCount(0);
  const track=await video.evaluateHandle((v:HTMLVideoElement)=>(v.srcObject as MediaStream).getVideoTracks()[0]);
  await page.getByRole('button',{name:'Stop camera'}).click();
  expect(await track.evaluate(t=>t.readyState)).toBe('ended');
  await expect(page.getByLabel('Analyzed camera frame')).toBeVisible();
  await page.getByRole('button',{name:'Start camera',exact:true}).click();
- await expect(video).toBeVisible();await expect(video).not.toHaveClass(/preview-hidden/);
- await expect(page.getByRole('button',{name:'Live preview',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(video).toBeVisible();await expect(page.locator('.live-camera')).not.toHaveClass(/preview-hidden/);
+ await expect(page.locator('.live-camera .detection-overlay')).toBeVisible();
  await page.getByRole('button',{name:'Stop camera'}).click();
  expect(errors).toEqual([]);
 });
@@ -65,7 +67,7 @@ test('real camera pipeline recognizes several objects in one frame',async({page}
  },'data:image/jpeg;base64,'+readFileSync(fixture).toString('base64'));
  await page.goto('/detect/live');await page.locator('html[data-app-ready=true]').waitFor();
  await page.getByRole('button',{name:'Start camera',exact:true}).first().click();
- await expect(page.getByRole('button',{name:'Analyzed frame',exact:true})).toBeEnabled({timeout:150000});
+ await expect(page.locator('.live-camera .detection-overlay')).toBeVisible({timeout:150000});
  console.log('MULTI DEFAULT:',await page.locator('.object-counts').allTextContents());
  await expect(page.locator('.object-counts')).toContainText('wallet');
  await expect(page.locator('.object-counts')).toContainText('sunglasses');
