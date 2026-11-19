@@ -1,0 +1,7 @@
+{
+  "name": "visionary-backend-dev",
+  "private": true,
+  "scripts": {
+    "dev": "node dev.mjs"
+  }
+}

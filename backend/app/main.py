@@ -142,7 +142,7 @@ def upload(u=Depends(current_user),db:Session=Depends(database)):
     return {'upload_id':intent.id,**signed}
 
 def serialize(d):
-    return {'id':d.id,'source_type':d.source_type,'image_url':storage.image_url(d.image_public_id,d.image_format),'width':d.width,'height':d.height,'model_version':d.model_version,'confidence_threshold':d.confidence_threshold,'total_objects':d.total_objects,'detected_at':d.detected_at,'objects':[{'class_id':o.class_id,'object_name':o.object_name,'confidence':o.confidence,'bounding_box':o.bounding_box,'segmentation_data':o.segmentation_data} for o in d.objects]}
+    return {'id':d.id,'source_type':d.source_type,'image_url':storage.image_url(d.image_public_id,d.image_format),'width':d.width,'height':d.height,'model_version':d.model_version,'confidence_threshold':d.confidence_threshold,'total_objects':d.total_objects,'detected_at':d.detected_at,'objects':[{'class_id':o.class_id,'object_name':o.object_name,'confidence':o.confidence,'bounding_box':o.bounding_box,'segmentation_data':o.segmentation_data,'label_similarity':o.label_similarity,'label_margin':o.label_margin} for o in d.objects]}
 
 @api.post('/detections',status_code=201)
 def save(data:DetectionInput,u=Depends(current_user),db:Session=Depends(database)):

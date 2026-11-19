@@ -1,5 +1,47 @@
 # Verification
 
+## Broad-vocabulary update (19 November 2026)
+
+The scanner now uses YOLOE-26s plus MobileCLIP2-S0 with 1,227 fixed text prototypes.
+The original 80-class decoder was replaced by a manifest-driven contract; the backend
+accepts larger class IDs and stores label similarity/margin separately from proposal confidence.
+Migration 002 adds nullable verification fields without invalidating old snapshots.
+
+Final production verification: **5 Playwright scenarios passed**, including real Neon/Cloudinary
+registration, save, signed image delivery, history, analytics, settings, deletion, and logout/login.
+The four everyday examples each produced one expected label: sunglasses, wallet, spotlight (lamp),
+and perfume bottle. Existing bus/person recognition, camera lifecycle/denial, upload validation,
+and responsive layouts also passed. Svelte check reported **0 errors and 0 warnings**;
+**6 frontend tests passed** and the Node production build completed. Neon is at **002 (head)**.
+
+Current unit coverage: 6 frontend tests, including non-COCO class/coefficient decoding and
+duplicate suppression; 4 backend scenarios, including extended category schema bounds.
+PyTorch/ONNX geometry/mask parity passed on 6 images: bus, zidane, the user glasses example,
+wallet, lamp, and perfume. Minimum reconstructed mask IoU was 0.999985. The image verifier's
+ONNX/PyTorch output parity is checked during export.
+
+The actual browser regression uses the user's screenshot crop locally and three Wikimedia
+examples. It checks that glasses, wallet, spotlight/lamp, and perfume are recognized through
+the complete ONNX pipeline. These fixtures are in ignored `ml/checks/`, and that specific
+test is skipped if they are absent. No private screenshot is published. The ordinary bus/person
+test remains active to prevent a broader vocabulary from breaking existing scene recognition.
+
+Known limits: this is not a 1,227-class benchmark. A category list is not an accuracy guarantee.
+Image-text matching may confuse similar objects; close alternatives are marked, ambiguous
+secondary matches are suppressed, and only the leading uncertain region may use global context.
+Proposal confidence is not the certainty of the final semantic label. Up to 20 proposals are
+examined per frame. Physical Android/iPhone and hardware WebGPU remain unverified.
+The model license selection is for the user's confirmed non-commercial research/task/personal use.
+
+Local reference images (test-only; not distributed): wallet — Auckland Museum collection,
+CC BY 4.0, https://commons.wikimedia.org/wiki/File:Wallet_(AM_1969.3-5).jpg;
+lamp — ViajeroExtraviado, CC0, https://commons.wikimedia.org/wiki/File:Black_desk_lamp.jpg;
+perfume — Santeri Viinamäki, CC BY-SA 4.0,
+https://commons.wikimedia.org/wiki/File:Perfume_glass_bottle.jpg.
+
+The sections below describe the original v1 baseline; see this section and the current generated
+validation report for v2 rather than interpreting the old 80-class results as a broad accuracy claim.
+
 ## Automated checks
 
 - Frontend: `npm run check` (Svelte/TypeScript), `npm test` (4 numerical tests), `npm run build`.

@@ -71,3 +71,9 @@ def test_validation_settings_password_and_origin():
     assert c.patch('/api/v1/auth/password',json={'current_password':'wrong','new_password':'password1234'}).status_code==400
     assert c.patch('/api/v1/auth/password',json={'current_password':'A-real-test-pass123','new_password':'password1234'}).status_code==204
     assert c.get('/api/v1/auth/me').status_code==401
+
+def test_extended_vocabulary_validation():
+    from app.schemas import ObjectInput
+    obj=ObjectInput(class_id=1155,object_name='wallet',confidence=.8,bounding_box=(0,0,100,100))
+    assert obj.class_id==1155
+    with pytest.raises(ValueError):ObjectInput(class_id=10000,object_name='invalid',confidence=.8,bounding_box=(0,0,100,100))

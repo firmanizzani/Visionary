@@ -1,7 +1,20 @@
 import { describe,it,expect } from 'vitest';import {letterbox,iou,encodeRle,decodeRle,decode,countObjects} from './math';
 describe('YOLO coordinate and segmentation contract',()=>{
  it('letterboxes portrait and landscape consistently',()=>{expect(letterbox(1280,720)).toMatchObject({scale:.5,padX:0,padY:140});expect(letterbox(300,600)).toMatchObject({padX:160,padY:0});});
- it('performs class-aware suppression and maps boxes to source pixels',()=>{const n=3,pred=new Float32Array(116*n),proto=new Float32Array(32*160*160);for(let i=0;i<n;i++){pred[i]=320;pred[n+i]=320;pred[2*n+i]=100;pred[3*n+i]=100;pred[4*n+i]=i===0?.9:.8;}pred[4*n+2]=0;pred[5*n+2]=.7;pred[84*n]=1;proto.fill(1);const result=decode(pred,[1,116,3],proto,[1,32,160,160],1280,720,.5);expect(result).toHaveLength(2);expect(result[0].bounding_box).toEqual([540,260,740,460]);expect(result[0].object_name).toBe('person');expect(result[0].segmentation_data!.rle.some(n=>n>0)).toBe(true);expect(countObjects(result,.85)).toEqual({person:1});});
+ it('performs class-aware suppression and maps boxes to source pixels',()=>{const n=3,pred=new Float32Array(116*n),proto=new Float32Array(32*160*160);for(let i=0;i<n;i++){pred[i]=320;pred[n+i]=320;pred[2*n+i]=100;pred[3*n+i]=100;pred[4*n+i]=i===0?.9:.8;}pred[2]=500;pred[4*n+2]=0;pred[5*n+2]=.7;pred[84*n]=1;proto.fill(1);const result=decode(pred,[1,116,3],proto,[1,32,160,160],1280,720,.5);expect(result).toHaveLength(2);expect(result[0].bounding_box).toEqual([540,260,740,460]);expect(result[0].object_name).toBe('person');expect(result[0].segmentation_data!.rle.some(n=>n>0)).toBe(true);expect(countObjects(result,.85)).toEqual({person:1});});
  it('round trips RLE including masks starting with foreground',()=>{for(const bits of [[1,1,0,1,0,0],[0,0,0],[1,1,1]])expect([...decodeRle(encodeRle(new Uint8Array(bits)),bits.length)]).toEqual(bits);});
  it('rejects incompatible outputs instead of inventing masks',()=>{expect(()=>decode(new Float32Array(),[1,84,8400],new Float32Array(),[1,32,160,160],640,640)).toThrow('do not match');expect(iou([0,0,10,10],[20,20,30,30])).toBe(0);});
+ it('decodes categories beyond COCO using the exported vocabulary and coefficient offset',()=>{
+  const labels=Array.from({length:1227},(_,i)=>`category ${i}`);labels[1155]='wallet';
+  const pred=new Float32Array(4+1227+32);pred.set([320,320,100,100]);pred[4+1155]=.8;pred[4+1227]=1;
+  const proto=new Float32Array(32*160*160);proto.fill(1);
+  const result=decode(pred,[1,pred.length,1],proto,[1,32,160,160],640,640,.5,{labels,inputSize:640,maskChannels:32});
+  expect(result).toHaveLength(1);expect(result[0].class_id).toBe(1155);expect(result[0].object_name).toBe('wallet');
+  expect(decodeRle(result[0].segmentation_data!.rle,160*160).some(x=>x===1)).toBe(true);
+ });
+ it('does not count nearly identical boxes twice under competing class names',()=>{
+  const pred=new Float32Array(116*2);for(let i=0;i<2;i++){pred[i]=320;pred[2+i]=320;pred[4+i]=100;pred[6+i]=100;}
+  pred[8]=.9;pred[11]=.85;
+  expect(decode(pred,[1,116,2],new Float32Array(32*160*160),[1,32,160,160],640,640)).toHaveLength(1);
+ });
 });

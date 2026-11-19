@@ -12,7 +12,7 @@
     for(let i=0;i<bits.length;i++)if(bits[i]){im.data[i*4]=rgb[0];im.data[i*4+1]=rgb[1];im.data[i*4+2]=rgb[2];im.data[i*4+3]=85;}tc.putImageData(im,0,0);ctx.drawImage(tmp,0,0,width,height);
    }
    if(mode!=='mask'||!o.segmentation_data){ctx.strokeStyle=color;ctx.lineWidth=Math.max(2,width/500);ctx.strokeRect(x1,y1,x2-x1,y2-y1);}
-   const fs=Math.max(14,width/60);ctx.font=`600 ${fs}px sans-serif`;const text=o.object_name+(showConfidence?` ${Math.round(o.confidence*100)}%`:''),tw=ctx.measureText(text).width+12, ty=Math.max(fs+10,y1);
+   const fs=Math.max(14,width/60);ctx.font=`600 ${fs}px sans-serif`;const text=o.object_name+(o.label_margin!=null&&o.label_margin<.01?' ?':'')+(showConfidence?` ${Math.round(o.confidence*100)}%`:''),tw=ctx.measureText(text).width+12, ty=Math.max(fs+10,y1);
    ctx.fillStyle=color;ctx.fillRect(Math.min(x1,width-tw),ty-fs-10,tw,fs+10);ctx.fillStyle='#071923';ctx.fillText(text,Math.min(x1,width-tw)+6,ty-5);
   }
  });

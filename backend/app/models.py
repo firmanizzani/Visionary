@@ -64,6 +64,8 @@ class DetectedObject(Base):
     confidence: Mapped[float] = mapped_column(Float)
     bounding_box: Mapped[list] = mapped_column(json_type)
     segmentation_data: Mapped[dict | None] = mapped_column(json_type, nullable=True)
+    label_similarity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    label_margin: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 class UploadIntent(Base):

@@ -1,13 +1,37 @@
 [
   {
     "image": "fixtures/bus.jpg",
-    "objects": 4,
+    "objects": 6,
     "min_mask_iou": 1.0,
     "status": "passed"
   },
   {
     "image": "fixtures/zidane.jpg",
     "objects": 3,
+    "min_mask_iou": 0.9999850988388062,
+    "status": "passed"
+  },
+  {
+    "image": "checks/user-glasses.png",
+    "objects": 2,
+    "min_mask_iou": 1.0,
+    "status": "passed"
+  },
+  {
+    "image": "checks/wallet.jpg",
+    "objects": 1,
+    "min_mask_iou": 1.0,
+    "status": "passed"
+  },
+  {
+    "image": "checks/lamp.jpg",
+    "objects": 1,
+    "min_mask_iou": 1.0,
+    "status": "passed"
+  },
+  {
+    "image": "checks/perfume.jpg",
+    "objects": 4,
     "min_mask_iou": 1.0,
     "status": "passed"
   }

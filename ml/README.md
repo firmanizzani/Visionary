@@ -1,36 +1,73 @@
-# Model development
+# Browser models
 
-Model: **Ultralytics YOLOv8n-seg**, pretrained COCO, 80 classes. Source weights:
-https://github.com/ultralytics/assets (official Ultralytics release download, `yolov8n-seg.pt`).
-The Ultralytics toolchain and weights are AGPL-3.0; review redistribution/source disclosure
-obligations or obtain an appropriate enterprise license from Ultralytics for proprietary deployment.
-This repository does not assert a different license for the model.
+Visionary AI now combines **YOLOE-26s instance segmentation** with **MobileCLIP2-S0 label matching**.
+The fixed vocabulary contains **1,227 category names**: LVIS's 1,203 object names (first synonyms),
+missing COCO categories, and a few everyday electronics/toiletry categories. `probe_broad.vocabulary()`
+is the reproducible source. `frontend/src/lib/ai/model.json` and `verifier.json` carry identical labels.
+Do not append names to these files manually: embeddings and YOLO class indices must be regenerated together.
 
-Use a separate Python 3.12 environment here. Never include this environment in the backend deployment.
+## Reproduce
+
+Use a separate Python 3.12 environment in `ml`; never deploy it with FastAPI.
 
 ```sh
 python -m venv .venv
-# activate the environment, then:
+# Activate the environment, then:
 pip install -r requirements.txt
-python export_model.py
-python validate_model.py path/to/image1.jpg path/to/image2.jpg
-python evaluate.py --data coco8-seg.yaml
-# Optional fine tuning:
-python evaluate.py --train --data your-dataset.yaml --epochs 30
+python export_model.py --checkpoint yoloe-26s-seg.pt
+python export_verifier.py
+python validate_model.py fixtures/bus.jpg fixtures/zidane.jpg
 ```
 
-Export: float32, opset 17, static batch 1, 640 × 640 RGB, no embedded NMS, no dynamic axes.
-Input: `[1,3,640,640]`, normalized 0–1, pad 114, centered letterbox.
-Outputs: `[1,116,8400]` (xywh + 80 class scores + 32 mask coefficients),
-`[1,32,160,160]` segmentation prototypes. Decoder rejects other output contracts.
-Class-aware NMS uses IoU .45, minimum decoding confidence .1, max 100 detections.
-Masks are sigmoid-thresholded at .5, cropped to boxes and encoded as RLE in original aspect ratio.
-Export generates metadata with SHA-256 and labels alongside the model.
+The YOLOE export downloads the official checkpoint and text encoder on first use. Prompt embeddings
+are prepared offline, so browsers do not run a text encoder. The verifier uses OpenCLIP's
+`MobileCLIP2-S0` / `dfndr2b` checkpoint, reparameterized for inference. It averages normalized text
+embeddings for three standard templates before normalizing again. Model sources and weight hashes
+are recorded in the generated manifests. All prototype vectors are actual model outputs.
 
-`validate_model.py` feeds identical letterboxed images to PyTorch and ONNX Runtime CPU,
-compares class/box/confidence outputs and checks reconstructed masks exceed .98 IoU.
-It writes `validation-report.json`. Browser performance and parity are separate checks.
-For browser or CDN deployment keep model URL, model version and metadata together, use a
-versioned filename if replacing weights, and set MIME `application/octet-stream` plus a cache policy.
-The browser caches the model by URL and the worker is reused across detection routes.
-No universal FPS or cross-device compatibility claim is made.
+YOLOE input: `[1,3,640,640]`, RGB, float32, 0–1, centered letterbox with pad 114.
+Raw outputs: `[1,1263,8400]` = xywh + 1,227 class scores + 32 mask coefficients,
+and `[1,32,160,160]` mask prototypes. Export is static float32 ONNX opset 17.
+With the pinned Ultralytics version, `nms=None` selects raw one-to-many output; `nms=False`
+selects a different end-to-end branch and must not be substituted without changing the decoder.
+The decoder reads class count, input size and mask channels from the manifest and validates shapes.
+
+MobileCLIP2 image input: `[1,3,256,256]`, RGB float32 0–1, zero mean/unit std.
+Output is a normalized 512-dimensional vector. Region crops are letterboxed rather than expanded
+over neighboring objects. The leading ambiguous region can use scene context. Scores compare
+against the shipped normalized prototype matrix. Secondary uncertain matches are conservatively
+suppressed. High-confidence people and common vehicles retain their YOLO labels to avoid replacing
+a person's label with a clothing/background category. Up to 20 region proposals are examined per frame.
+
+Localization confidence and label cosine similarity are separate measurements. Neither is a calibrated
+probability that a name is correct. Close alternatives are marked uncertain. Similarity thresholds are
+heuristics validated on the regression cases; no dataset-wide accuracy claim is made.
+
+## Assets and integrity
+
+Both ONNX models total about 89 MB, plus about 2.5 MB of text prototypes. Export splits weights into
+24 MiB files under `frontend/static/models/` so each GitHub file stays below the file-size limit.
+Each part and each complete model has a SHA-256 checksum. The browser verifies cached and downloaded
+bytes before creating sessions. This prevents stale YOLOv8 assets being decoded with new category names.
+Default deployment uses bundled shards. `PUBLIC_MODEL_URL` may override the detector only with a
+complete ONNX file whose hash matches `model.json`. Version metadata for saved scans includes verifier
+and prototype identity. Legacy snapshots reconstruct their saved overlays without loading any model.
+
+## Evaluation and limits
+
+`validate_model.py` compares PyTorch/ONNX detections and mask IoU on identical letterboxed images.
+`export_verifier.py` verifies the image encoder's ONNX/PyTorch numerical parity before publishing assets.
+Actual browser regression tests cover the user's glasses failure, wallet, desk lamp, perfume, people,
+and a bus. Local user images are intentionally ignored by Git. See `docs/testing.md` for results.
+Pretrained inference is not custom training; no user image was used to fit weights or embeddings.
+The earlier `evaluate.py` remains a legacy YOLOv8 dataset-training utility, not the new export path.
+
+## Licenses
+
+YOLOE/Ultralytics checkpoints and tooling: AGPL-3.0, official source
+https://github.com/ultralytics/assets/releases/tag/v8.4.0.
+MobileCLIP2 weights: **Apple Machine Learning Research Model license, non-commercial research only**.
+This selection is for the user's confirmed research/task/personal scope, not a commercial deployment.
+Apple source and model license texts are included alongside the verifier assets. Source:
+https://github.com/apple-aiml-research/ml-mobileclip and the official `timm/MobileCLIP2-S0-OpenCLIP` checkpoint.
+Commercial use requires a suitable model/license selection; this repository does not relicense upstream weights.

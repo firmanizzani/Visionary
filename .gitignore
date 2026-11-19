@@ -16,3 +16,6 @@ ml/datasets/
 ml/.config/
 .taste-skill/
 .vscode/
+ml/mobileclip*.ts
+ml/checks/
+ml/*.npz

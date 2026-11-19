@@ -1,6 +1,7 @@
 <script lang="ts">
  import { onDestroy, onMount, untrack } from 'svelte';
  import { env } from '@lib/env';
+ import { MODEL,MODEL_LABELS,MODEL_VERSION } from '@lib/ai/model';
  import { Video, Image as ImageIcon, Upload, Scan, Play, Square, SwitchCamera, ArrowUpRight, Save, X, SlidersHorizontal, ShieldCheck, Layers, Box, AlertCircle, Check, LoaderCircle } from 'lucide-svelte';
  import Button from './ui/button.svelte';import Overlay from './Overlay.svelte';
  import { initialize, infer } from '@lib/ai/client';import { countObjects } from '@lib/ai/math';
@@ -16,22 +17,25 @@
  onDestroy(()=>{stop();sourceImage?.close();if(imageUrl)URL.revokeObjectURL(imageUrl);});
  $effect(()=>{threshold;key=crypto.randomUUID();success='';});
  async function loadModel(){status='Preparing AI runtime…';await initialize(s=>status=s);modelReady=true;}
- function stop(){generation++;running=false;clearTimeout(timer);stream?.getTracks().forEach(t=>t.stop());stream=null;if(video)video.srcObject=null;}
+ function stop(){generation++;running=false;busy=false;clearTimeout(timer);stream?.getTracks().forEach(t=>t.stop());stream=null;if(video)video.srcObject=null;}
  async function start(){error='';success='';busy=true;const g=++generation;
+  objects=[];processed=false;frame=null;if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl='';
   try{
    if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera access requires HTTPS or localhost and a supported browser.');
    const next=await navigator.mediaDevices.getUserMedia({video:device?{deviceId:{exact:device},width:{ideal:1280},height:{ideal:720}}:{facingMode:facing,width:{ideal:1280},height:{ideal:720}},audio:false});
    if(g!==generation){next.getTracks().forEach(t=>t.stop());return;}stream=next;video.srcObject=stream;await video.play();running=true;
    devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');await loadModel();if(g===generation)loop(g);
-  }catch(e){stop();error=e instanceof DOMException&&e.name==='NotAllowedError'?'Camera permission was denied. Allow camera access in your browser settings and try again.':(e as Error).message;}finally{busy=false;}
+  }catch(e){if(g===generation){stop();error=e instanceof DOMException&&e.name==='NotAllowedError'?'Camera permission was denied. Allow camera access in your browser settings and try again.':(e as Error).message;}}finally{if(g===generation)busy=false;}
  }
  async function loop(g:number){if(!running||g!==generation)return;
   try{
    const c=document.createElement('canvas'),scale=Math.min(1,1280/video.videoWidth);c.width=Math.round(video.videoWidth*scale);c.height=Math.round(video.videoHeight*scale);c.getContext('2d')!.drawImage(video,0,0,c.width,c.height);
    const timestamp=new Date().toISOString();const result=await infer(await createImageBitmap(c));
    if(g!==generation)return;
-   frame=c;width=c.width;height=c.height;objects=result.objects;latency=result.latency;processed=true;detectedAt=timestamp;key=crypto.randomUUID();
-   if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=URL.createObjectURL(await new Promise<Blob>(resolve=>c.toBlob(b=>resolve(b!),'image/jpeg',.9)));
+   const nextUrl=URL.createObjectURL(await new Promise<Blob>((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Could not prepare the analyzed frame.')),'image/jpeg',.9)));
+   if(g!==generation){URL.revokeObjectURL(nextUrl);return;}
+   const previous=imageUrl;frame=c;width=c.width;height=c.height;objects=result.objects;latency=result.latency;processed=true;detectedAt=timestamp;key=crypto.randomUUID();imageUrl=nextUrl;
+   if(previous)URL.revokeObjectURL(previous);
    timer=setTimeout(()=>loop(g),Math.max(0,250-result.latency));
   }catch(e){if(g===generation){error=(e as Error).message;stop();}}
  }
@@ -44,7 +48,7 @@
    if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=URL.createObjectURL(await new Promise<Blob>(r=>c.toBlob(b=>r(b!),'image/jpeg',.9)));objects=[];processed=false;latency=0;key=crypto.randomUUID();
   }catch(e){error=(e as Error).message;}
  }
- async function analyze(){if(!frame)return;busy=true;error='';success='';try{await loadModel();const result=await infer(await createImageBitmap(frame));objects=result.objects;latency=result.latency;processed=true;detectedAt=new Date().toISOString();key=crypto.randomUUID();}catch(e){error=(e as Error).message;}finally{busy=false;}}
+ async function analyze(){if(!frame)return;busy=true;error='';success='';try{await loadModel();status='Detecting objects and matching labels…';const result=await infer(await createImageBitmap(frame));objects=result.objects;latency=result.latency;processed=true;detectedAt=new Date().toISOString();key=crypto.randomUUID();}catch(e){error=(e as Error).message;}finally{busy=false;}}
  function clear(){if(busy)return;sourceImage?.close();sourceImage=null;frame=null;URL.revokeObjectURL(imageUrl);imageUrl='';objects=[];processed=false;}
  async function save(){if(!frame||!processed||saving)return;if(!$user){location.href='/login';return;}
   saving=true;error='';success='';
@@ -57,7 +61,7 @@
    for(const k of ['timestamp','public_id','type','overwrite','allowed_formats','signature','api_key'])form.append(k,String(signed[k]));form.append('file',blob,'snapshot.jpg');
    const upload=await fetch(`https://api.cloudinary.com/v1_1/${signed.cloud_name}/image/upload`,{method:'POST',body:form});
    if(!upload.ok)throw new Error('Private image upload failed. Please try again.');
-   await api('/detections',json('POST',{upload_id:signed.upload_id,idempotency_key:savedKey,source_type:live?'camera':'image',model_version:env.PUBLIC_MODEL_VERSION||'yolov8n-seg-coco-640-v1',confidence_threshold:savedThreshold,width:snapshot.width,height:snapshot.height,detected_at:savedAt,objects:savedObjects}));
+   await api('/detections',json('POST',{upload_id:signed.upload_id,idempotency_key:savedKey,source_type:live?'camera':'image',model_version:MODEL_VERSION,confidence_threshold:savedThreshold,width:snapshot.width,height:snapshot.height,detected_at:savedAt,objects:savedObjects}));
    success='Snapshot saved to your private history.';
   }catch(e){error=(e as Error).message;}finally{saving=false;}
  }
@@ -72,12 +76,12 @@
  </div>
  <input class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" bind:this={fileInput} onchange={e=>{selectFile(e.currentTarget.files?.[0]);e.currentTarget.value='';}}/>
  <div class="viewport-toolbar"><div>{#if live}<Button variant={running?'outline':'default'} onclick={running?stop:start} disabled={busy&&!running}>{#if running}<Square size={14}/>Stop camera{:else}<Play size={14}/>{busy?'Preparing…':'Start camera'}{/if}</Button><button class="btn ghost" onclick={switchCamera} disabled={busy} aria-label="Switch camera"><SwitchCamera size={18}/><span>Switch</span></button>{:else}<Button onclick={analyze} disabled={!imageUrl||busy}>{#if busy}<LoaderCircle size={16} class="spin"/>{:else}<Scan size={16}/>{/if}{busy?'Analyzing…':'Detect objects'}</Button><button class="btn ghost" onclick={()=>fileInput.click()} disabled={busy}><Upload size={16}/><span>Replace image</span></button>{/if}</div><button class="btn outline" onclick={save} disabled={!processed||saving||busy}><Save size={16}/>{saving?'Saving…':$user?'Save snapshot':'Sign in to save'}</button></div>
- <div class="inference-strip"><span>{@render CpuIcon()}{modelReady?'YOLOv8n-seg': 'YOLOv8n-seg · 80 classes'}</span><span>{latency?`${Math.round(latency)} ms inference`:'Browser-based inference'}</span>{#if processed}<span>{width} × {height}</span>{/if}</div>
+ <div class="inference-strip"><span>{@render CpuIcon()}{modelReady?"YOLOE + local label matching":`${MODEL_LABELS.length.toLocaleString()} supported categories`}</span><span>{latency?`${Math.round(latency)} ms inference`:'Browser-based inference'}</span>{#if processed}<span>{width} × {height}</span>{/if}</div>
  {#if error}<div class="notice error" role="alert"><AlertCircle size={17}/>{error}</div>{/if}{#if success}<div class="notice success" role="status"><Check size={17}/>{success}<a href="/history">View history →</a></div>{/if}
  {#if live&&processed}<p class="frame-notice">Showing the latest analyzed frame so masks and boxes stay aligned. Counts describe this frame, not unique objects across the session.</p>{/if}
  </section>
- <div class="detection-rail"><section class="panel controls-panel"><div class="panel-heading"><h2><SlidersHorizontal size={17}/>Detection settings</h2></div><div class="panel-content"><label class="range-label" for="threshold">Confidence threshold <strong>{Math.round(threshold*100)}%</strong></label><input id="threshold" type="range" min="0.1" max="0.95" step="0.05" bind:value={threshold}/><div class="range-ends"><span>10% · More results</span><span>95% · More selective</span></div><p class="field-help">Only predictions above this threshold appear.</p><label for="mode">Visualization</label><div class="segmented" id="mode">{#each [{value:'box',label:'Boxes'},{value:'mask',label:'Masks'},{value:'both',label:'Both'}] as m}<button class:chosen={mode===m.value} onclick={()=>mode=m.value as Mode}>{m.label}</button>{/each}</div><label class="checkbox-row"><span>Show confidence scores</span><input type="checkbox" bind:checked={showConfidence}/></label>{#if live&&devices.length>1}<label for="camera">Camera<select id="camera" bind:value={device} onchange={()=>{if(running){stop();start();}}}>{#each devices as d}<option value={d.deviceId}>{d.label||'Camera'}</option>{/each}</select></label>{/if}</div></section>
- <section class="panel results-panel"><div class="panel-heading"><h2>Detected objects</h2><span class="count-pill">{visible.length}</span></div>{#if visible.length}<div class="results-summary"><strong>{visible.length}</strong><span>objects in this {live?'frame':'image'}<small>{Object.keys(counts).length} categories identified</small></span></div><div class="object-counts">{#each Object.entries(counts) as [label,count]}<div><span class="object-dot"></span><span>{label}</span><strong>{count}</strong></div>{/each}</div><details><summary>Individual predictions</summary>{#each visible as o}<div class="prediction"><span>{o.object_name}</span><span>{(o.confidence*100).toFixed(1)}%</span></div>{/each}</details>{:else}<div class="results-empty"><Layers size={26} strokeWidth={1.3}/><strong>{processed?'No objects above threshold':'A clearer picture awaits'}</strong><p>{processed?'Lower the confidence threshold or try a different view.':live?'Start your camera to see detected objects and live counts here.':'Analyze an image to see its objects, confidence, and counts.'}</p></div>{/if}</section>
+ <div class="detection-rail"><section class="panel controls-panel"><div class="panel-heading"><h2><SlidersHorizontal size={17}/>Detection settings</h2></div><div class="panel-content"><label class="range-label" for="threshold">Confidence threshold <strong>{Math.round(threshold*100)}%</strong></label><input id="threshold" type="range" min="0.1" max="0.95" step="0.05" bind:value={threshold}/><div class="range-ends"><span>10%</span><span>95%</span></div><p class="field-help">Filters proposal scores. Label matches are evaluated separately.</p><label for="mode">Visualization</label><div class="segmented" id="mode">{#each [{value:'box',label:'Boxes'},{value:'mask',label:'Masks'},{value:'both',label:'Both'}] as m}<button class:chosen={mode===m.value} onclick={()=>mode=m.value as Mode}>{m.label}</button>{/each}</div><label class="checkbox-row"><span>Show confidence scores</span><input type="checkbox" bind:checked={showConfidence}/></label>{#if live&&devices.length>1}<label for="camera">Camera<select id="camera" bind:value={device} onchange={()=>{if(running){stop();start();}}}>{#each devices as d}<option value={d.deviceId}>{d.label||'Camera'}</option>{/each}</select></label>{/if}</div></section>
+ <section class="panel results-panel"><div class="panel-heading"><h2>Detected objects</h2><span class="count-pill">{visible.length}</span></div>{#if visible.length}<div class="results-summary"><strong>{visible.length}</strong><span>objects in this {live?'frame':'image'}<small>{Object.keys(counts).length} categories identified</small></span></div><div class="object-counts">{#each Object.entries(counts) as [label,count]}<div><span class="object-dot"></span><span>{label}</span><strong>{count}</strong></div>{/each}</div>{#if visible.some(o=>o.label_margin!=null&&o.label_margin<.01)}<p class="field-help" style="padding:0 20px">Some labels have close alternatives. Check the object list before relying on the result.</p>{/if}<details><summary>Individual predictions</summary>{#each visible as o}<div class="prediction"><span>{o.object_name}</span><span>{(o.confidence*100).toFixed(1)}%{#if o.label_similarity!=null}<small> · Label match {o.label_similarity.toFixed(2)}{o.label_margin!=null&&o.label_margin<.01?' · uncertain':''}</small>{/if}</span></div>{/each}</details>{:else}<div class="results-empty"><Layers size={26} strokeWidth={1.3}/><strong>{processed?'No objects above threshold':'A clearer picture awaits'}</strong><p>{processed?'Lower the confidence threshold or try a different view.':live?'Start your camera to see detected objects and live counts here.':'Analyze an image to see its objects, confidence, and counts.'}</p></div>{/if}</section>
  <div class="local-note"><ShieldCheck size={19}/><div><strong>Your view stays yours.</strong><p>AI runs on your device. Images only leave your browser when you save a snapshot.</p></div></div></div></div>
-<div class="detection-bottom"><div><Box size={18}/><span><strong>80 everyday categories</strong>People, vehicles, animals, and more.</span></div><div><Layers size={18}/><span><strong>Beyond bounding boxes</strong>Pixel-level instance segmentation.</span></div><a href="/docs">About the model <ArrowUpRight size={15}/></a></div>
+<div class="detection-bottom"><div><Box size={18}/><span><strong>{MODEL_LABELS.length.toLocaleString()} object categories</strong>People, vehicles, animals, and more.</span></div><div><Layers size={18}/><span><strong>Beyond bounding boxes</strong>Pixel-level instance segmentation.</span></div><a href="/docs">About the model <ArrowUpRight size={15}/></a></div>
 {#snippet CpuIcon()}<span class="mini-chip">AI</span>{/snippet}

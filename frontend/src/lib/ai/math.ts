@@ -20,32 +20,37 @@ export function decodeRle(runs: number[], length: number) {
  const mask=new Uint8Array(length); let offset=0, value=0;
  for(const count of runs) {if(value) mask.fill(1,offset,Math.min(length,offset+count)); offset+=count; value=1-value;} return mask;
 }
-// Contract: YOLOv8n-seg, static 640, no embedded NMS: [1,116,8400] and [1,32,160,160].
-export function decode(pred: Float32Array, dims: readonly number[], proto: Float32Array, pdims: readonly number[], width: number, height: number, threshold=.1): DetectedObject[] {
- if(dims.length!==3 || dims[1]!==116 || pdims.length!==4 || pdims[1]!==32 || pdims[2]!==160 || pdims[3]!==160) throw new Error('Model outputs do not match YOLOv8 segmentation v1. Export the documented model.');
- const n=dims[2], {scale,padX,padY}=letterbox(width,height);
+export type DecoderContract={labels:readonly string[];inputSize:number;maskChannels:number};
+const LEGACY:DecoderContract={labels:LABELS,inputSize:640,maskChannels:32};
+// Contract is generated from the actual export. New model classes must never use COCO's indices.
+export function decode(pred: Float32Array, dims: readonly number[], proto: Float32Array, pdims: readonly number[], width: number, height: number, threshold=.1, contract:DecoderContract=LEGACY): DetectedObject[] {
+ const {labels,inputSize,maskChannels}=contract;
+ if(!labels.length || dims.length!==3 || dims[0]!==1 || dims[1]!==4+labels.length+maskChannels || pdims.length!==4 || pdims[0]!==1 || pdims[1]!==maskChannels || pdims[2]<1 || pdims[3]<1 || pred.length!==dims.reduce((a,b)=>a*b,1) || proto.length!==pdims.reduce((a,b)=>a*b,1)) throw new Error('Model outputs do not match the installed model manifest. Reload the updated application and model together.');
+ const n=dims[2], {padX,padY,resizedWidth,resizedHeight}=letterbox(width,height,inputSize);
+ const scaleX=resizedWidth/width,scaleY=resizedHeight/height;
  const candidates: {index:number; cls:number; score:number; box:[number,number,number,number]}[]=[];
  for(let i=0;i<n;i++) {
-  let cls=0,score=0; for(let c=0;c<80;c++) { const v=pred[(4+c)*n+i]; if(v>score){score=v;cls=c;} }
-  if(score<threshold) continue;
+  let cls=0,score=0; for(let c=0;c<labels.length;c++) { const v=pred[(4+c)*n+i]; if(v>score){score=v;cls=c;} }
+  if(!Number.isFinite(score)||score<threshold||score>1) continue;
   const x=pred[i], y=pred[n+i], w=pred[2*n+i], h=pred[3*n+i];
-  const box:[number,number,number,number]=[Math.max(0,(x-w/2-padX)/scale),Math.max(0,(y-h/2-padY)/scale),Math.min(width,(x+w/2-padX)/scale),Math.min(height,(y+h/2-padY)/scale)];
+  const box:[number,number,number,number]=[Math.max(0,(x-w/2-padX)/scaleX),Math.max(0,(y-h/2-padY)/scaleY),Math.min(width,(x+w/2-padX)/scaleX),Math.min(height,(y+h/2-padY)/scaleY)];
   if(box[2]>box[0] && box[3]>box[1]) candidates.push({index:i,cls,score,box});
  }
  candidates.sort((a,b)=>b.score-a.score);
  const kept: typeof candidates=[];
- for(const c of candidates.slice(0,3000)){ if(!kept.some(k=>k.cls===c.cls && iou(k.box,c.box)>.45)) kept.push(c); if(kept.length>=100) break; }
+ for(const c of candidates.slice(0,3000)){ if(!kept.some(k=>{const overlap=iou(k.box,c.box);return k.cls===c.cls?overlap>.45:overlap>.9;})) kept.push(c); if(kept.length>=100) break; }
  return kept.map(c=>{
   // 160px masks in original-image aspect ratio, RLE keeps history bounded.
-  const mw=Math.max(1,Math.round(width*scale/4)), mh=Math.max(1,Math.round(height*scale/4));
+  const ph=pdims[2],pw=pdims[3],mw=Math.max(1,Math.min(160,Math.round(resizedWidth*pw/inputSize))), mh=Math.max(1,Math.min(160,Math.round(resizedHeight*ph/inputSize)));
+  const coefficients=Array.from({length:maskChannels},(_,k)=>pred[(4+labels.length+k)*n+c.index]);
   const mask=new Uint8Array(mw*mh);
   for(let y=0;y<mh;y++) for(let x=0;x<mw;x++) {
    const ox=(x+.5)*width/mw, oy=(y+.5)*height/mh;
    if(ox<c.box[0]||ox>c.box[2]||oy<c.box[1]||oy>c.box[3]) continue;
-   const px=Math.min(159,Math.floor((ox*scale+padX)/4)),py=Math.min(159,Math.floor((oy*scale+padY)/4));
-   let v=0; for(let k=0;k<32;k++) v+=pred[(84+k)*n+c.index]*proto[k*25600+py*160+px];
+   const px=Math.max(0,Math.min(pw-1,Math.floor((ox*scaleX+padX)*pw/inputSize))),py=Math.max(0,Math.min(ph-1,Math.floor((oy*scaleY+padY)*ph/inputSize)));
+   let v=0; for(let k=0;k<maskChannels;k++) v+=coefficients[k]*proto[k*ph*pw+py*pw+px];
    mask[y*mw+x]=v>0?1:0;
   }
-  return {class_id:c.cls,object_name:LABELS[c.cls],confidence:c.score,bounding_box:c.box,segmentation_data:{width:mw,height:mh,rle:encodeRle(mask)}};
+  return {class_id:c.cls,object_name:labels[c.cls],confidence:c.score,bounding_box:c.box,segmentation_data:{width:mw,height:mh,rle:encodeRle(mask)}};
  });
 }

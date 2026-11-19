@@ -7,8 +7,8 @@ Use two Vercel projects from this repository. Do not deploy the ML environment o
 Root directory: `frontend`, framework SvelteKit, install `npm ci`, build `npm run build`.
 Vercel uses `@sveltejs/adapter-vercel`; local builds use `adapter-node` because Windows
 may deny Vercel's output symlinks. Both are SvelteKit adapters for the same application.
-Keep exported `static/models/yolov8n-seg.onnx` in the build source, or put it on your own CORS-enabled CDN.
-Set `PUBLIC_MODEL_URL`, `PUBLIC_MODEL_VERSION`. These are public and contain no secrets.
+Keep both generated model directories, binary shards, label prototypes, manifests, and license files under `static/models/` in the build source.
+The default model configuration is generated in `src/lib/ai/model.json` and `verifier.json`; deploy them together with their matching assets. PUBLIC_MODEL_URL is only an optional override for a detector with the same hash.
 
 Recommended: proxy `/api/v1/*` to the backend using a Vercel external rewrite, with
 `PUBLIC_API_BASE_URL=/api/v1`. Put this rewrite in `frontend/vercel.json` with the actual backend hostname:
@@ -56,3 +56,5 @@ Model/runtime downloads are tens of MB and only start on demand. Review current 
 function, request and bandwidth limits; Neon compute/connection limits; and Cloudinary storage,
 delivery and transformation usage in each provider dashboard before launch. Account limits vary.
 No public deployment is created automatically by the local build.
+
+This model selection is for non-commercial research. The MobileCLIP2 weight license is included in its asset directory. Download size is about 90 MB, so test memory/latency and cache behavior on each target device.

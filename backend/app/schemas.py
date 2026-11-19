@@ -37,11 +37,13 @@ class Mask(Schema):
         if any(v < 0 for v in self.rle) or sum(self.rle) != self.width*self.height: raise ValueError('Invalid mask RLE')
         return self
 class ObjectInput(Schema):
-    class_id: int = Field(ge=0, le=79)
+    class_id: int = Field(ge=0, le=9999)
     object_name: str = Field(min_length=1, max_length=80)
     confidence: float = Field(ge=0, le=1)
     bounding_box: tuple[float,float,float,float]
     segmentation_data: Mask | None = None
+    label_similarity: float | None = Field(default=None,ge=-1,le=1)
+    label_margin: float | None = Field(default=None,ge=0,le=2)
 class DetectionInput(Schema):
     upload_id: str = Field(max_length=36)
     idempotency_key: str = Field(min_length=16, max_length=64)
