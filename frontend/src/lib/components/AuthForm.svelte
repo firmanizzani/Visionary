@@ -32,5 +32,5 @@
 
   </section>
  </main>
- <footer><span>Visionary AI. A little more understanding.</span><a href="/docs">Privacy & model guide <ArrowUpRight size={13}/></a></footer>
+ <footer><span>Visionary AI. A little more understanding.</span><a href="/about#privacy">Privacy <ArrowUpRight size={13}/></a></footer>
 </div>

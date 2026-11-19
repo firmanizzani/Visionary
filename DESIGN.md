@@ -25,7 +25,20 @@ Workspace pages retain immediate rendering; reduced motion keeps the landing pag
 
 - Landing (Persuade): a large photographic sample and a clear camera/upload choice. Sample
   annotations are explicitly illustrative, can be hidden, and never download models or start
-  inference. The vocabulary count is generated from the actual model manifest.
+  inference. Visitors can isolate Plant, Cup, Book, or Keyboard annotations and restore all
+  four with native buttons. The vocabulary count is generated from the actual model manifest.
+  Features use concise linked rows; the privacy explanation opens into a horizontal sequence
+  on desktop and a vertical sequence on phones. The closing action is left-aligned.
+- Public navigation is shared with About: Home, Features, How it works, and About. It stays
+  visible while scrolling, with a solid background and anchor offsets below the header.
+  Active colors follow the route, selected hash, and the section reached while scrolling,
+  including browser Back/Forward. Passive scroll events schedule one animation frame only
+  when needed; the tracker is cleaned up when leaving the landing page.
+  The footer groups Explore/Learn links, gives Privacy a direct destination, and adapts to
+  two link columns on phones. About is a public information page at `/about`; `/docs` redirects
+  there for old bookmarks. Plain explanations come first, technical details are expandable,
+  category search remains available, and Privacy has its own `#privacy` anchor. No detection
+  CTA appears in the About introduction. The workspace sidebar omits the former help-guide item.
 - Detection (Operate): camera/photo is the largest work region. Video and detection overlay remain
   one live view. A right rail prioritizes results, with real crop thumbnails and category counts,
   followed by detection settings. Thumbnails come from the immutable analyzed frame, not the live

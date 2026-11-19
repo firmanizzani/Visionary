@@ -22,11 +22,17 @@ test('landing entrances finish, annotations toggle, and Home works on desktop an
  await expect(page.locator('.sample-box')).toHaveCount(0);
  await page.getByRole('button',{name:'Show boxes',exact:true}).click();
  await expect(page.locator('.sample-box')).toHaveCount(4);
+ const sample=page.getByRole('group',{name:'Choose a sample object',exact:true});
+ await sample.getByRole('button',{name:'Cup',exact:true}).click();
+ await expect(page.locator('.sample-box')).toHaveCount(1);
+ await expect(page.locator('.sample-box')).toHaveText('cup');
+ await sample.getByRole('button',{name:'All objects',exact:true}).click();
+ await expect(page.locator('.sample-box')).toHaveCount(4);
  await page.setViewportSize({width:390,height:844});
  const toggle=page.getByRole('button',{name:'Toggle navigation',exact:true});
  await toggle.click();await expect(toggle).toHaveAttribute('aria-expanded','true');
  await expect(page.getByRole('link',{name:'Home',exact:true})).toBeVisible();
- await page.getByRole('link',{name:'Capabilities',exact:true}).click();
+ await page.getByRole('navigation',{name:'Main navigation',exact:true}).getByRole('link',{name:'Features',exact:true}).click();
  await expect(toggle).toHaveAttribute('aria-expanded','false');
  await expect(page).toHaveURL(/#features$/);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

@@ -1,5 +1,22 @@
 # Verification
 
+## Public navigation, About, and landing polish (19 November 2026)
+
+The landing page and About share a sticky public header and a structured Explore/Learn footer.
+Five focused browser scenarios passed, including sample-object selection/reset; active links
+after clicks, Back, and manual scrolling in both directions; old `/docs` redirects; Privacy
+anchors below the sticky header; category search; mobile navigation; both themes at
+1440/768/390px; reduced motion; and readable content without JavaScript. No model downloads
+occur in the landing demo. Its labels remain illustrative. The former sidebar guide link and
+About intro detection CTA are absent, as is the API-key sentence in the landing close.
+
+Svelte check reported zero errors/warnings and all 16 unit tests passed. Production builds
+completed. The public-page inspector reported zero failures at all three widths; screenshots
+were reviewed. Remaining warnings concern the established type-size variety, no video (the
+working annotated sample serves that role without a video download), and the native 17px
+desktop scrollbar affecting measured viewport-edge margins. Footer metadata was increased to
+13px after inspection to resolve its small-text warning.
+
 ## Landing motion and Home navigation (19 November 2026)
 
 The production build passed three focused Playwright scenarios: finite entrances and scroll
