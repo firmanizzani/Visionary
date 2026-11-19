@@ -6,9 +6,10 @@ save meaningful snapshots privately. Product behavior is defined in `prd.md` and
 
 ## Visual world
 
-Use neutral graphite surfaces and cyan detection/action accents. Dark is the default; Light and
-System are first-class choices stored locally per browser. The theme bootstrap runs before paint.
-System follows the OS preference, including changes while the page is open. Manrope is self-hosted
+Use neutral graphite surfaces and cyan detection/action accents. Dark is the default; a single icon toggles directly between Light and Dark, stored locally
+per browser. The theme bootstrap runs before paint.
+There is no System menu option; an existing System preference is migrated once to the current
+resolved Light/Dark value. Manrope is self-hosted
 through Fontsource, with distinct heading, body, metadata, and numeric hierarchy.
 
 Tokens live in `frontend/src/studio.css`; structural styles in `app.css`; the studio's component
@@ -32,7 +33,11 @@ resting surfaces flat. Avoid glow, decorative grids, glass, scan loops, or page-
 - Dashboard/analytics (Operate): genuine totals, activity, and recent photographs; charts use a
   single data hue. History emphasizes photo previews, readable metadata, search, and source filters.
 - Auth/settings/docs: the same surfaces, input language, theme control, and type hierarchy. Auth
-  uses the project's illustrative photograph; forms and privacy explanations remain functional.
+  uses an open, cardless two-column composition with a transparent illustration of everyday
+  objects, small sample annotations, and consistently sized fields. Registration is top-aligned;
+  the shorter login form is vertically centered against the left composition. The desk
+  photograph is reserved for marketing. Fields retain labels and leading icons; forms and
+  privacy explanations remain functional.
 
 The approved mockup is a visual direction, not a flattened interface asset. The implemented shell
 retains a global header for theme/account access and adapts the proposed layout to existing routes.
@@ -47,7 +52,7 @@ camera controls, save, keyboard focus, and native labeled controls in both theme
 controls are at least 42px tall, and phone controls use 44px targets. Supporting metadata can
 be 11–12px; object names and task controls have stronger hierarchy. Respect reduced motion.
 
-Check Dark/Light/System persistence, OS changes, example annotations, camera playback with live
+Check one-click Dark/Light persistence, migration of legacy System choices, example annotations, camera playback with live
 overlays, multiple objects, exact-frame saving, history/detail/analytics/settings, and logout.
 Inspect real pages at 1440, 768, and 390px. The two independent camera/result columns have
 content-driven heights; do not stretch an empty panel solely to align its bottom edge.
@@ -61,10 +66,17 @@ responsive breakpoints. The workspace's unequal-column-height warning is intenti
 ## Asset provenance
 
 `frontend/static/images/studio-desk.webp` is an AI-generated illustrative desk photograph made
-for this redesign using Imagegen. The WebP is 199,528 bytes. It is used for marketing and auth,
+for this redesign using Imagegen. The WebP is 199,528 bytes. It is used for marketing,
 never as a substitute for user camera frames or saved images. All annotation controls and page
 text are real UI. No private regression image or user screenshot is published.
 
 Skills applied: Frontend Design, UI Taste, design-taste frontend, Impeccable craft guidance, and
 Imagegen. Impeccable's executable context engine was unavailable; project context was read
 directly. No executable Impeccable audit or pixel-perfect fidelity claim is made.
+
+`frontend/static/images/auth-objects.webp` is a separate AI-generated transparent illustration
+of headphones, a book, and a cup (98,998 bytes). Auth annotations are illustrative HTML, not
+model results. Auth layout has one canonical stylesheet (`frontend/src/auth.css`) so old card
+and flex rules cannot distort its columns. There is no photographic desk panel or camera/lens
+product image on login/register. The main header has Login for guests and Dashboard for signed-in
+users; camera/photo exploration remains available from the landing hero.

@@ -17,13 +17,13 @@ from .security import current_user, auth_session, public_user, hasher, verify, D
 from . import storage
 
 app = FastAPI(title='Visionary AI', version='1.0.0')
-app.add_middleware(CORSMiddleware, allow_origins=[config.frontend_url], allow_credentials=True, allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'], allow_headers=['Content-Type','X-CSRF-Token'])
+app.add_middleware(CORSMiddleware, allow_origins=config.allowed_origins, allow_credentials=True, allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'], allow_headers=['Content-Type','X-CSRF-Token'])
 
 @app.middleware('http')
 async def security_headers(request: Request, call_next):
     if request.method not in ('GET','HEAD','OPTIONS'):
         origin=request.headers.get('origin')
-        if origin and origin != config.frontend_url:
+        if origin and origin not in config.allowed_origins:
             from starlette.responses import JSONResponse
             return JSONResponse({'detail':'Origin is not allowed'},403)
     try: declared_size=int(request.headers.get('content-length','0') or 0)
@@ -94,7 +94,7 @@ def refresh(request:Request,response:Response,db:Session=Depends(database)):
     s=db.scalar(select(AuthSession).where(AuthSession.token_hash==digest(raw)).with_for_update())
     if not s or s.expires_at.replace(tzinfo=timezone.utc)<=now(): raise HTTPException(401,'Session expired')
     # Origin verification also permits a page reload when the in-memory CSRF value was lost.
-    if request.headers.get('origin')!=config.frontend_url and not secrets.compare_digest(request.headers.get('X-CSRF-Token',''),s.csrf_token): raise HTTPException(403,'Invalid refresh origin')
+    if request.headers.get('origin') not in config.allowed_origins and not secrets.compare_digest(request.headers.get('X-CSRF-Token',''),s.csrf_token): raise HTTPException(403,'Invalid refresh origin')
     u=db.get(User,s.user_id)
     return {'csrf_token':issue(response,db,u,s)}
 

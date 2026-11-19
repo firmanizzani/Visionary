@@ -77,3 +77,28 @@ def test_extended_vocabulary_validation():
     obj=ObjectInput(class_id=1155,object_name='wallet',confidence=.8,bounding_box=(0,0,100,100))
     assert obj.class_id==1155
     with pytest.raises(ValueError):ObjectInput(class_id=10000,object_name='invalid',confidence=.8,bounding_box=(0,0,100,100))
+
+def test_loopback_login_refresh_and_origin_bounds():
+    from app.config import config
+    for index, origin in enumerate(config.allowed_origins):
+        c=TestClient(app,base_url=origin,headers={'Origin':origin})
+        payload={'full_name':'Local origin test','email':f'loopback-{index}@example.com','password':'A-real-test-pass123','confirm_password':'A-real-test-pass123'}
+        r=c.post('/api/v1/auth/register',json=payload)
+        assert r.status_code==201,r.text
+        c.headers['X-CSRF-Token']=r.json()['csrf_token']
+        assert c.post('/api/v1/auth/logout').status_code==204
+        r=c.post('/api/v1/auth/login',json={'email':payload['email'],'password':payload['password']})
+        assert r.status_code==200,r.text
+        c.headers.pop('X-CSRF-Token')
+        assert c.post('/api/v1/auth/refresh').status_code==200
+        assert c.patch('/api/v1/users/me',json={'full_name':'Needs CSRF'}).status_code==403
+        preflight=c.options('/api/v1/auth/login',headers={'Access-Control-Request-Method':'POST'})
+        assert preflight.headers['access-control-allow-origin']==origin
+    for origin in ['http://localhost:5199','https://localhost:5173','http://localhost.evil.example:5173','https://evil.example','null']:
+        assert TestClient(app).post('/api/v1/auth/login',headers={'Origin':origin},json={}).status_code==403
+
+def test_production_origin_stays_exact():
+    from app.config import Config
+    for frontend, secure in [('https://visionary.example',False),('http://127.0.0.1:5173',True)]:
+        settings=Config(frontend_url=frontend,cookie_secure=secure)
+        assert settings.allowed_origins==[frontend]

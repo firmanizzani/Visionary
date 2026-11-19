@@ -22,6 +22,9 @@ For this workspace, a backend development environment was provisioned at
 `frontend/.venv`; use its `Scripts/python.exe` to run backend commands if desired.
 The real backend `.env` is ignored by Git and never imported into the frontend.
 Use the localhost hostname consistently: cookies and CSRF origins must match `FRONTEND_URL`.
+For local HTTP development with `COOKIE_SECURE=false`, the backend accepts both `localhost`
+and `127.0.0.1` at the configured frontend port. Cookies still belong to the hostname you use,
+so switching between them may require signing in again. Production keeps an exact origin match.
 
 ### Menjalankan lagi di VS Code (Windows)
 
@@ -86,9 +89,9 @@ Deployment instructions: `docs/deployment.md`. Model license obligations: `ml/RE
 
 ## Vision Studio appearance
 
-The interface defaults to Dark, with Light and System available from the theme selector in the
-header (and in Profile & settings). The choice is saved in this browser; System follows device
-appearance changes. Semantic colors and the visual specification are documented in `DESIGN.md`.
+The interface defaults to Dark. The icon in the header (and in Profile & settings) switches
+directly between Light and Dark in one click. The choice is saved in this browser. An older
+System preference is resolved once into a saved Light/Dark choice. Semantic colors and the visual specification are documented in `DESIGN.md`.
 
 Detection results include crops from the analyzed frame, and recent account snapshots refresh
 after a successful save. The landing-page desk photograph and sample annotations are illustrative;

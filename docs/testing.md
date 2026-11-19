@@ -1,5 +1,33 @@
 # Verification
 
+## Auth, local origins, and direct theme toggle (19 November 2026)
+
+The full application suite passed **10 Playwright scenarios** on the production build. After
+the last CSS-only adjustment to center the shorter login form, the rebuilt production output
+passed all **3 auth/theme scenarios** again. Svelte check reported **0 errors, 0 warnings**;
+**10 frontend unit tests** and **6 backend tests** passed (one upstream AnyIO deprecation warning).
+
+Login is vertically centered against the open illustration composition on desktop; registration
+retains its approved top alignment. Field widths match between pages. The dedicated layout test
+asserts those different alignments at 1440/1024px, checks single-column layouts at 768/390px in
+both themes, and exercises password visibility and mismatched-password validation. The auth
+inspector reports **0 FAIL**; the 29px phone title is an intentional hierarchy choice. Both pages
+use the same canonical auth stylesheet and no large enclosing or nested cards.
+
+The header now offers Login for guests; the theme icon toggles Light/Dark directly with no menu
+or System choice. Browser tests verify persistence and migration of an older System preference
+into a saved explicit theme. The auth illustration (`auth-objects.webp`, 98,998 bytes) contains
+three everyday objects. The explanatory caption was removed at the user's request; the image
+and its sample annotations remain illustrative rather than live model output. No camera/lens
+asset or private screenshot is used in the application.
+
+The backend permits localhost and 127.0.0.1 aliases only for the same configured local HTTP
+frontend port when secure cookies are disabled. CORS, request origin validation, and refresh
+use the same list. Tests verify registration/login/refresh at both aliases, continued CSRF
+requirements, rejection of external origins/different ports/schemes, and exact production
+origins. A real browser flow through localhost:5173 also passed account creation, save, history,
+analytics, logout and login. Local API was restarted with this fix; credentials were unchanged.
+
 ## Vision Studio redesign (19 November 2026)
 
 Final Node production build: **8 Playwright scenarios passed** (1.2 minutes), including a new

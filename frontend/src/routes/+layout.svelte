@@ -1,6 +1,7 @@
 <script lang="ts">
  import '../app.css';
  import '../studio-overrides.css';
+ import '../auth.css';
  import '@fontsource/manrope/400.css';
  import '@fontsource/manrope/500.css';
  import '@fontsource/manrope/600.css';

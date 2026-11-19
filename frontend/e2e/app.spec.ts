@@ -1,3 +1,4 @@
+import {chooseTheme} from './helpers';
 import {test,expect} from '@playwright/test';
 import path from 'node:path';
 import {writeFileSync,mkdirSync} from 'node:fs';
@@ -9,14 +10,14 @@ async function captureStudio(page:import('@playwright/test').Page,name:string){
  if(name==='history')await expect.poll(()=>page.locator('.history-image img').evaluateAll(images=>images.every(i=>(i as HTMLImageElement).complete&&(i as HTMLImageElement).naturalWidth>0)),{timeout:30000}).toBe(true);
  await page.mouse.move(0,0);
  for(const theme of ['dark','light']){
-  await page.getByLabel('Color theme',{exact:true}).first().selectOption(theme);
+  await chooseTheme(page,theme);
   for(const width of [1440,390]){
    await page.setViewportSize({width,height:1000});await page.evaluate(()=>{scrollTo(0,0);return document.fonts.ready;});
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:`../.taste-skill/studio-account/${name}-${theme}-${width}.png`,fullPage:true,animations:'disabled'});
   }
  }
- await page.setViewportSize({width:1440,height:1000});await page.getByLabel('Color theme',{exact:true}).first().selectOption('dark');
+ await page.setViewportSize({width:1440,height:1000});await chooseTheme(page,'dark');
 }
 
 test('public pages, responsive layout and camera cleanup',async({page,context})=>{

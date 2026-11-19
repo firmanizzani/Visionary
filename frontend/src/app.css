@@ -276,25 +276,6 @@ to{transform:rotate(360deg)}}
 .public-footer>div{margin-left:auto;display:flex;gap:25px;font-size:12px;color:var(--muted)}
 .public-footer>div a{display:flex;align-items:center;gap:5px}
 .public-footer small{font-size:12px;color:var(--muted)}
-.auth-page{background:var(--surface);min-height:100vh;padding:35px 5vw}
-.auth-layout{max-width:1050px;margin:65px auto;display:grid;grid-template-columns:1fr 1fr;gap:110px;align-items:center}
-.auth-story{padding:55px 35px;background:var(--raised);border-radius:14px;min-height:470px;display:flex;flex-direction:column;align-items:start}
-.auth-story h1{font-size:46px;line-height:1.1;letter-spacing:-2px;margin:30px 0 25px;color:var(--ink)}
-.auth-story>p{font-size:14px}
-.auth-story>div{margin-top:auto;display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13px;line-height:1.7;padding-top:35px}
-.auth-form h2{font-size:30px}
-.auth-form>p{font-size:13px;margin-top:10px}
-.auth-form form{display:grid;gap:21px;margin-top:30px}
-.auth-form form .btn{width:100%;min-height:43px}
-.auth-form .notice{margin:0}
-.auth-switch{text-align:center;font-size:13px!important;margin-top:25px!important}
-.auth-switch a{color:var(--accent);font-weight:550}
-.guest-link{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--muted);margin-top:22px}
-.password-field{position:relative}
-.password-field input{width:100%;padding-right:40px!important}
-.password-field button{position:absolute;right:5px;top:5px}
-.auth-page>footer{max-width:1050px;margin:auto;font-size:12px;display:flex;justify-content:space-between;color:var(--muted)}
-.auth-page>footer a{color:var(--muted)}
 @media(min-width:1600px){
 .app-main{padding:40px}
 .viewport{min-height:480px}
@@ -333,8 +314,6 @@ to{transform:rotate(360deg)}}
 .hero-copy>p{font-size:13px}
 .hero-status{font-size:12px}
 .landing h2{font-size:32px}
-.auth-layout{gap:55px}
-.auth-story h1{font-size:39px}
 .empty-history{gap:15px}
 .empty-history .btn{font-size:12px}}
 @media(max-width:700px){
@@ -422,13 +401,6 @@ h1{font-size:24px}
 .public-footer{margin:0 22px;padding:25px 0;flex-wrap:wrap;gap:25px}
 .public-footer>div{width:100%;margin:0;font-size:13px;justify-content:space-between}
 .public-footer small{font-size:12px}
-.auth-page{padding:27px 22px}
-.auth-layout{grid-template-columns:1fr;margin:45px auto;gap:0;max-width:420px}
-.auth-story{display:none}
-.auth-form h2{font-size:29px}
-.auth-page>footer{display:block;font-size:12px;line-height:1.8}
-.auth-page>footer a{display:block;margin-top:8px}
-.auth-form form{gap:23px}
 input:not([type=range]):not([type=checkbox]),select{font-size:16px;min-height:44px}
 .btn{min-height:42px}
 .history-toolbar select{font-size:13px}
