@@ -1,5 +1,35 @@
 # Verification
 
+## Vision Studio redesign (19 November 2026)
+
+Final Node production build: **8 Playwright scenarios passed** (1.2 minutes), including a new
+theme/responsive scenario. Svelte check: **0 errors, 0 warnings**; **10 frontend unit tests passed**.
+The font-only dependency change reported zero known npm vulnerabilities. Backend/model code and
+database schema were unchanged.
+
+Theme coverage verifies Dark by default, persistence after reload, System following live OS
+appearance changes, navigation across public/workspace pages, and the sample annotation toggle.
+Dark and Light captures cover landing, login, image detection, and docs at 1440/768/390px, plus
+account dashboard/history/detail/analytics/settings at desktop and phone widths. All tested pages
+remain within the viewport. History captures wait for successful image delivery rather than
+accepting an unloaded image as visual evidence.
+
+The real-service flow checks that a successful save refreshes recent snapshots, then verifies
+history, private image detail, analytics, settings, delete, logout and login. Camera tests check
+that live video continues with non-empty overlays and that object thumbnail canvases contain
+actual pixels. The multi-item and single-item recognition regressions still pass.
+
+The workspace inspector reported 0 FAIL (one content-driven column-height warning). The landing
+inspector reported 0 FAIL with `still-page` explicitly allowed: the functional sample annotation
+toggle and user-started camera replace decorative automatic motion. Remaining font-role/video
+warnings and the intentional unequal workspace column heights are documented in `DESIGN.md`.
+Screenshots were visually reviewed; the implementation follows the approved direction with an
+existing global theme/account header, not a claim of pixel-perfect mockup reproduction.
+
+Illustrative marketing photo: `frontend/static/images/studio-desk.webp`, generated for this
+project, 199,528 bytes. It is never used in place of a user's camera frame or saved snapshot.
+No private regression photos or screenshots are included in the commit.
+
 ## Camera playback and multiple-item update (19 November 2026)
 
 Final Node production build passed all **7 Playwright scenarios** (1.6 minutes), including

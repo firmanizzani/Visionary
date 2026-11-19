@@ -25,6 +25,8 @@ test('camera keeps playing with visible detection overlays during slow inference
  const frames=await video.evaluate((v:HTMLVideoElement)=>v.getVideoPlaybackQuality().totalVideoFrames);
  await expect(page.locator('.object-counts')).toContainText('wallet');
  await expect(page.locator('.count-pill')).toHaveText('2');
+ await expect(page.locator('.object-thumbnail')).toHaveCount(2);
+ expect(await page.locator('.object-thumbnail').evaluateAll(nodes=>nodes.every(node=>{const c=node as HTMLCanvasElement;return c.width>0&&c.getContext('2d')!.getImageData(0,0,c.width,c.height).data.some((value,i)=>i%4===3&&value>0);}))).toBe(true);
  await expect(video).toBeVisible();await expect(page.locator('.live-camera')).not.toHaveClass(/preview-hidden/);
  expect(await video.evaluate((v:HTMLVideoElement)=>v.currentTime)).toBeGreaterThan(time+1);
  expect(await video.evaluate((v:HTMLVideoElement)=>v.getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(frames+5);

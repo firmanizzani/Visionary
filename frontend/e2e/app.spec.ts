@@ -3,8 +3,24 @@ import path from 'node:path';
 import {writeFileSync,mkdirSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 const fixture=path.resolve('../ml/fixtures/bus.jpg');
+
+async function captureStudio(page:import('@playwright/test').Page,name:string){
+ mkdirSync('../.taste-skill/studio-account',{recursive:true});
+ if(name==='history')await expect.poll(()=>page.locator('.history-image img').evaluateAll(images=>images.every(i=>(i as HTMLImageElement).complete&&(i as HTMLImageElement).naturalWidth>0)),{timeout:30000}).toBe(true);
+ await page.mouse.move(0,0);
+ for(const theme of ['dark','light']){
+  await page.getByLabel('Color theme',{exact:true}).first().selectOption(theme);
+  for(const width of [1440,390]){
+   await page.setViewportSize({width,height:1000});await page.evaluate(()=>{scrollTo(0,0);return document.fonts.ready;});
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+   await page.screenshot({path:`../.taste-skill/studio-account/${name}-${theme}-${width}.png`,fullPage:true,animations:'disabled'});
+  }
+ }
+ await page.setViewportSize({width:1440,height:1000});await page.getByLabel('Color theme',{exact:true}).first().selectOption('dark');
+}
+
 test('public pages, responsive layout and camera cleanup',async({page,context})=>{
- await page.goto('/');await page.locator('html[data-app-ready=true]').waitFor();await expect(page.getByRole('heading',{level:1})).toHaveText('A new way tosee your world.');
+ await page.goto('/');await page.locator('html[data-app-ready=true]').waitFor();await expect(page.getByRole('heading',{level:1})).toHaveText("See what's in front of you.");
  await page.getByRole('link',{name:'Try live detection'}).click();await expect(page.getByRole('heading',{name:'Live detection',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Start camera',exact:true}).first().click();
  await expect(page.getByRole('button',{name:'Stop camera'})).toBeVisible({timeout:120000});
@@ -45,14 +61,14 @@ test('real account, image save, history, detail, analytics, settings and logout'
  try{
   await page.goto('/register');await page.locator('html[data-app-ready=true]').waitFor();
   await page.getByLabel('Full name',{exact:true}).fill('Browser verification');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByLabel('Confirm password').fill(password);await page.getByRole('button',{name:'Create account',exact:true}).click();
-  await expect(page).toHaveURL(/dashboard/);await expect(page.locator('.metrics strong').first()).toHaveText('0');
+  await expect(page).toHaveURL(/dashboard/);await expect(page.locator('.metrics strong').first()).toHaveText('0');await captureStudio(page,'overview-empty');
   await page.reload();await page.locator('html[data-app-ready=true]').waitFor();await expect(page.getByRole('heading',{name:'Overview',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Image detection',exact:true}).click();await page.locator('input[type=file]').setInputFiles(fixture);await page.getByRole('button',{name:'Detect objects',exact:true}).click();await expect(page.getByText('Analysis complete',{exact:true})).toBeVisible({timeout:150000});
-  await page.getByRole('button',{name:'Save snapshot',exact:true}).click();await page.waitForTimeout(2000);console.log('SAVE STATE',await page.locator('.notice').allTextContents(),await page.locator('.viewport-toolbar').innerText());await expect(page.getByRole('status')).toContainText('Snapshot saved',{timeout:30000});
-  await page.getByRole('link',{name:'Detection history',exact:true}).click();await expect(page.locator('.history-card')).toHaveCount(1);await page.locator('.history-card').first().click();await expect(page.getByRole('heading',{name:'Snapshot details'})).toBeVisible();await expect(page.locator('.detail-image img')).toBeVisible();await expect.poll(()=>page.locator('.detail-image img').evaluate((i:HTMLImageElement)=>i.complete&&i.naturalWidth>0)).toBeTruthy();
-  await page.getByRole('button',{name:'Masks',exact:true}).click();await page.screenshot({path:'../.taste-skill/browser/saved-detail.png',fullPage:true});
-  await page.getByRole('link',{name:'Analytics',exact:true}).click();await expect(page.locator('.metrics strong').first()).toHaveText('1');await expect(page.locator('.analytics-grid')).toContainText('person');await page.screenshot({path:'../.taste-skill/browser/analytics.png',fullPage:true});
-  await page.getByRole('link',{name:'Profile & settings',exact:true}).click();await page.getByLabel('Full name',{exact:true}).fill('Updated verification');await page.getByRole('button',{name:'Save profile',exact:true}).click();await expect(page.getByRole('status')).toContainText('profile');
+  await page.getByRole('button',{name:'Save snapshot',exact:true}).click();await page.waitForTimeout(2000);console.log('SAVE STATE',await page.locator('.notice').allTextContents(),await page.locator('.viewport-toolbar').innerText());await expect(page.getByRole('status')).toContainText('Snapshot saved',{timeout:30000});await expect(page.locator('.snapshot-strip a')).toHaveCount(1);
+  await page.getByRole('link',{name:'Detection history',exact:true}).click();await expect(page.locator('.history-card')).toHaveCount(1);await captureStudio(page,'history');await page.locator('.history-card').first().click();await expect(page.getByRole('heading',{name:'Snapshot details'})).toBeVisible();await expect(page.locator('.detail-image img')).toBeVisible();await expect.poll(()=>page.locator('.detail-image img').evaluate((i:HTMLImageElement)=>i.complete&&i.naturalWidth>0)).toBeTruthy();
+  await page.getByRole('button',{name:'Masks',exact:true}).click();await page.screenshot({path:'../.taste-skill/browser/saved-detail.png',fullPage:true});await captureStudio(page,'detail');
+  await page.getByRole('link',{name:'Analytics',exact:true}).click();await expect(page.locator('.metrics strong').first()).toHaveText('1');await expect(page.locator('.analytics-grid')).toContainText('person');await page.screenshot({path:'../.taste-skill/browser/analytics.png',fullPage:true});await captureStudio(page,'analytics');
+  await page.getByRole('link',{name:'Profile & settings',exact:true}).click();await captureStudio(page,'settings');await page.getByLabel('Full name',{exact:true}).fill('Updated verification');await page.getByRole('button',{name:'Save profile',exact:true}).click();await expect(page.getByRole('status')).toContainText('profile');
   await page.getByLabel('Visualization mode').selectOption('mask');await page.getByRole('button',{name:'Save preferences',exact:true}).click();await expect(page.getByRole('status')).toContainText('preferences');
   await page.getByRole('link',{name:'Detection history',exact:true}).click();await page.locator('.history-card').first().click();await page.getByRole('button',{name:'Delete snapshot',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Delete snapshot',exact:true}).click();await expect(page).toHaveURL(/\/history$/);await expect(page.locator('.history-card')).toHaveCount(0);
   await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page).toHaveURL(/\/$/);await page.goto('/dashboard');await page.locator('html[data-app-ready=true]').waitFor();await expect(page.getByRole('heading',{name:'Your personal workspace.'})).toBeVisible();

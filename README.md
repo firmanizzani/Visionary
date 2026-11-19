@@ -84,6 +84,17 @@ failed image deletions. API documentation: http://127.0.0.1:8001/docs.
 
 Deployment instructions: `docs/deployment.md`. Model license obligations: `ml/README.md`.
 
+## Vision Studio appearance
+
+The interface defaults to Dark, with Light and System available from the theme selector in the
+header (and in Profile & settings). The choice is saved in this browser; System follows device
+appearance changes. Semantic colors and the visual specification are documented in `DESIGN.md`.
+
+Detection results include crops from the analyzed frame, and recent account snapshots refresh
+after a successful save. The landing-page desk photograph and sample annotations are illustrative;
+they do not run inference. The WebP photograph adds about 200 KB. Camera frames, user snapshots,
+and model downloads retain the same privacy and on-demand behavior as before the redesign.
+
 ## Broader object recognition (v2)
 
 The scanner now uses YOLOE-26s plus MobileCLIP2-S0, with 1,227 generated category names, local label verification, integrity-checked cached weights, and uncertainty markers. Run both ML export scripts when regenerating assets. Apply database migration 002 before starting the updated backend. Old snapshots remain viewable without rerunning a model.
