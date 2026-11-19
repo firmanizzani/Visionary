@@ -1,0 +1,14 @@
+[
+  {
+    "image": "fixtures/bus.jpg",
+    "objects": 4,
+    "min_mask_iou": 1.0,
+    "status": "passed"
+  },
+  {
+    "image": "fixtures/zidane.jpg",
+    "objects": 3,
+    "min_mask_iou": 1.0,
+    "status": "passed"
+  }
+]

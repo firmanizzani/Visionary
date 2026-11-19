@@ -1,0 +1,7 @@
+<script lang="ts">
+ import {BarChart} from 'layerchart';
+ let {data,days=7}:{data:{date:string;count:number}[];days?:number}=$props();
+ let points=$derived.by(()=>{if(!days)return data;const map=new Map(data.map(d=>[d.date,d.count]));return Array.from({length:days},(_,i)=>{const date=new Date();date.setUTCDate(date.getUTCDate()-days+1+i);const key=date.toISOString().slice(0,10);return {date:key,count:map.get(key)||0};});});
+ let max=$derived(Math.max(2,Math.ceil(Math.max(0,...points.map(d=>d.count))/2)*2));
+</script>
+<div class="activity-chart" role="img" aria-label={`Saved detections by UTC day. ${data.map(d=>`${d.date}: ${d.count}`).join(', ')||'No saved detections.'}`}><div class="chart-y"><span>{max}</span><span>{Math.round(max/2)}</span><span>0</span></div><div class="chart-plot"><div class="chart-grid"><i></i><i></i><i></i></div><div class="library-chart"><BarChart data={points} x="date" y="count" yDomain={[0,max]} axis={false} grid={false} legend={false} rule={false} tooltipContext={false} highlight={false} cRange={['#168b9e']} motion="none" props={{bars:{fill:'#168b9e',strokeWidth:0,radius:3}}}/></div>{#if !data.length}<span class="chart-empty">Saved detections will appear here.</span>{/if}<div class="chart-x"><span>{points[0]?.date.slice(5)||'Start'}</span><span>{points[Math.floor(points.length/2)]?.date.slice(5)||''}</span><span>{points.at(-1)?.date.slice(5)||'Today'}</span></div></div></div>
