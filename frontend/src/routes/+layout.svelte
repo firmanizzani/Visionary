@@ -11,7 +11,7 @@
  import { onMount } from 'svelte';
  import { page } from '$app/state';
  import { goto } from '$app/navigation';
- import { user, loadSession } from '@lib/session';
+ import { user, loadSession, setSession } from '@lib/session';
  import { api } from '@lib/api';
  import { Scan, LayoutDashboard, Video, Image, History, ChartNoAxesCombined, Settings, ArrowUpRight, Menu, X, LogOut, ChevronRight, ShieldCheck, CircleHelp } from 'lucide-svelte';
  let {children}=$props();let menu=$state(false);
@@ -20,7 +20,7 @@
  let workspace=$derived(!['/','/login','/register'].includes(path));
  let title=$derived(nav.find(n=>path.startsWith(n.href))?.label || (path==='/settings'?'Profile & settings':'Detection details'));
  onMount(()=>{document.documentElement.dataset.appReady='true';void loadSession();return initializeTheme();});
- async function logout(){try{await api('/auth/logout',{method:'POST'});user.set(null);await goto('/');}catch(e){alert((e as Error).message);}}
+ async function logout(){try{await api('/auth/logout',{method:'POST'});setSession(null);await goto('/');}catch(e){alert((e as Error).message);}}
 </script>
 <svelte:head><title>Visionary AI · Intelligent object detection</title><meta name="description" content="See, understand, and count the world around you. Private object detection and segmentation, powered by AI in your browser."/></svelte:head>
 {#if workspace}

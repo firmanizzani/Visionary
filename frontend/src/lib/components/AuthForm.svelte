@@ -3,10 +3,10 @@
  import { goto } from '$app/navigation';
  import { Scan, ArrowUpRight, ArrowRight, ShieldCheck, Eye, EyeOff, Mail, LockKeyhole, UserRound, UserRoundPlus, LogIn, LoaderCircle } from 'lucide-svelte';
  import { api,json } from '@lib/api';
- import { user, loadSession } from '@lib/session';
+ import { setSession, loadSession } from '@lib/session';
  import Button from './ui/button.svelte';
  let {register=false}=$props();let name=$state(''),email=$state(''),password=$state(''),confirm=$state(''),show=$state(false),busy=$state(false),error=$state('');
- async function submit(e:SubmitEvent){e.preventDefault();error='';if(register&&password!==confirm){error='Passwords do not match. Enter the same password in both fields.';return;}busy=true;try{const result=await api('/auth/'+(register?'register':'login'),json('POST',register?{full_name:name,email,password,confirm_password:confirm}:{email,password}));user.set(result.user);await loadSession();await goto('/dashboard');}catch(e){error=(e as Error).message;}finally{busy=false;}}
+ async function submit(e:SubmitEvent){e.preventDefault();error='';if(register&&password!==confirm){error='Passwords do not match. Enter the same password in both fields.';return;}busy=true;try{const result=await api('/auth/'+(register?'register':'login'),json('POST',register?{full_name:name,email,password,confirm_password:confirm}:{email,password}));setSession(result.user);await loadSession();await goto('/dashboard');}catch(e){error=(e as Error).message;}finally{busy=false;}}
 </script>
 <div class="auth-page auth-refined" class:auth-login={!register}>
  <header class="auth-header"><a href="/" class="brand"><Scan size={28}/><span>visionary<span class="brand-ai">ai</span></span></a><ThemeSwitch/></header>

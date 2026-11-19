@@ -1,2 +1,3 @@
 import {defineConfig} from 'vitest/config';
-export default defineConfig({test:{include:['src/**/*.test.ts']},resolve:{alias:{'@lib':new URL('./src/lib',import.meta.url).pathname}}});
+import {fileURLToPath} from 'node:url';
+export default defineConfig({test:{include:['src/**/*.test.ts']},resolve:{alias:{'@lib':fileURLToPath(new URL('./src/lib',import.meta.url))}}});

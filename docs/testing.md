@@ -1,5 +1,22 @@
 # Verification
 
+## Session restoration (19 November 2026)
+
+The session browser regression uses a separate persistent Chrome profile and an ephemeral
+test account. It closes Chrome with only the persistent refresh cookie remaining, opens
+Chrome again with that profile, and verifies the authenticated dashboard without signing
+in again. This passed before and after the fix: cookie persistence itself worked locally.
+The reproduced failure was a settings API outage incorrectly clearing the restored user;
+the same test failed before the fix and passed afterward. A temporary auth-service outage
+now offers Retry and successfully restores the account when the service returns.
+
+Session loading shares one request, ignores stale responses after login/logout, and renews
+expired access tokens through the API's shared refresh request. Unit tests cover those races,
+service errors, and invalid login credentials. Tokens remain in HttpOnly cookies. Backend
+local settings are `COOKIE_SECURE=false`, `COOKIE_SAMESITE=lax`, with a seven-day refresh
+cookie by default. No `frontend/.env` is needed for the default same-origin `/api/v1` proxy.
+Use the same hostname each time: localhost and 127.0.0.1 have separate browser cookie stores.
+
 ## Auth, local origins, and direct theme toggle (19 November 2026)
 
 The full application suite passed **10 Playwright scenarios** on the production build. After
