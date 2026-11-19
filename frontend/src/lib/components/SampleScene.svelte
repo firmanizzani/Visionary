@@ -5,6 +5,6 @@
 </script>
 <figure class="sample-scene" data-ui>
  <div class="sample-heading"><span><Scan size={16}/>A closer look</span><span>Example scene</span></div>
- <div class="sample-photo"><img src="/images/studio-desk.webp" alt="Illustrative desk scene with a plant, cup, open notebook and keyboard" width="1586" height="992" fetchpriority="high"/>{#if show}{#each boxes as box}<div class="sample-box" style:left={`${box.x}%`} style:top={`${box.y}%`} style:width={`${box.w}%`} style:height={`${box.h}%`}><span>{box.name}</span></div>{/each}{/if}</div>
+ <div class="sample-photo"><img src="/images/studio-desk.webp" alt="Illustrative desk scene with a plant, cup, open notebook and keyboard" width="1586" height="992" fetchpriority="high"/>{#if show}{#each boxes as box,index}<div class="sample-box" style:--object-index={index} style:left={`${box.x}%`} style:top={`${box.y}%`} style:width={`${box.w}%`} style:height={`${box.h}%`}><span>{box.name}</span></div>{/each}{/if}</div>
  <figcaption><span>Sample annotations, not live predictions</span><button onclick={()=>show=!show} aria-pressed={show}><Layers size={15}/>{show?'Hide boxes':'Show boxes'}</button></figcaption>
 </figure>

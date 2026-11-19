@@ -1,12 +1,17 @@
 <script lang="ts">
+ import '../landing-motion.css';
+ import {onMount} from 'svelte';
+ import {animateLanding} from '@lib/landing-motion';
  import {Scan,ArrowUpRight,Video,Image,ShieldCheck,Menu,X,Layers,ArrowRight,Bookmark} from 'lucide-svelte';
  import {user} from '@lib/session';
  import ThemeSwitch from '@lib/components/ThemeSwitch.svelte';import SampleScene from '@lib/components/SampleScene.svelte';import {MODEL_LABELS} from '@lib/ai/model';
  let menu=$state(false);
+ let landing:HTMLDivElement;
+ onMount(()=>animateLanding(landing));
  const studies=[{name:'potted plant',x:0,y:0,w:.34,h:.63},{name:'cup',x:.58,y:.39,w:.2,h:.25},{name:'book',x:.18,y:.58,w:.49,h:.35},{name:'keyboard',x:.69,y:.59,w:.31,h:.23}];
 </script>
-<div class="landing studio-landing">
- <nav class="public-nav"><a href="/" class="brand"><Scan size={29}/><span>visionary<span class="brand-ai">ai</span></span></a><div class:mobile-open={menu} class="public-links"><a href="#features" onclick={()=>menu=false}>Capabilities</a><a href="#how-it-works" onclick={()=>menu=false}>How it works</a><a href="/docs">Model & privacy</a></div><div class="nav-actions"><ThemeSwitch/><a class="btn public-auth" href={$user?'/dashboard':'/login'}>{$user?'Dashboard':'Login'} <ArrowRight size={16}/></a><button class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Toggle navigation">{#if menu}<X/>{:else}<Menu/>{/if}</button></div></nav>
+<div class="landing studio-landing" bind:this={landing}>
+ <nav class="public-nav"><a href="/" class="brand"><Scan size={29}/><span>visionary<span class="brand-ai">ai</span></span></a><div id="landing-navigation" class:mobile-open={menu} class="public-links"><a href="/" aria-current="page" onclick={()=>menu=false}>Home</a><a href="#features" onclick={()=>menu=false}>Capabilities</a><a href="#how-it-works" onclick={()=>menu=false}>How it works</a><a href="/docs">Model & privacy</a></div><div class="nav-actions"><ThemeSwitch/><a class="btn public-auth" href={$user?'/dashboard':'/login'}>{$user?'Dashboard':'Login'} <ArrowRight size={16}/></a><button class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Toggle navigation" aria-expanded={menu} aria-controls="landing-navigation">{#if menu}<X/>{:else}<Menu/>{/if}</button></div></nav>
  <main>
   <section class="hero"><div class="hero-copy"><h1>See what's in front of you.</h1><p>Turn a camera view into a clearer picture. Find objects, explore their shapes, and keep the moments that matter.</p><div class="hero-actions"><a class="btn" href="/detect/live"><Video size={18}/>Try live detection <ArrowUpRight size={17}/></a><a class="text-link" href="/detect/image">Upload a photo <ArrowUpRight size={16}/></a></div><div class="hero-reassurance"><ShieldCheck size={16}/>On your device. No account needed to explore.</div></div><SampleScene/></section>
   <div class="studio-principles"><span><Scan size={18}/>Detect objects</span><span><Layers size={18}/>Explore their shapes</span><span><Bookmark size={18}/>Save your discoveries</span><a href="/docs">Meet the model <ArrowUpRight size={15}/></a></div>

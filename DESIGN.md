@@ -17,7 +17,9 @@ and responsive treatment in `studio-overrides.css`. Use semantic tokens rather t
 literal colors. Dark: background #171717, surface #202020, raised #292929, text #f5f5f5,
 secondary #b3b8b8, border #3b3e3e, accent #32c8c2. Light uses pearl backgrounds and a darker
 teal accent so text and controls remain readable. Keep borders quiet, corners 8–16px, and
-resting surfaces flat. Avoid glow, decorative grids, glass, scan loops, or page-entry choreography.
+resting surfaces flat. Avoid glow, decorative grids, glass, and scan loops. The public landing
+page uses finite, staggered entrances and illustrative annotation reveals at the user's request.
+Workspace pages retain immediate rendering; reduced motion keeps the landing page static.
 
 ## Surfaces
 

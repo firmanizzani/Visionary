@@ -1,5 +1,21 @@
 # Verification
 
+## Landing motion and Home navigation (19 November 2026)
+
+The production build passed three focused Playwright scenarios: finite entrances and scroll
+reveals, annotation toggling and desktop/mobile Home navigation; reduced-motion rendering;
+and readable content/primary destinations without JavaScript. The landing page makes no
+model downloads during this flow. Svelte check reported zero errors/warnings, all 16 unit
+tests passed, and the production build completed.
+
+The final page-mode inspector reported **0 FAIL, 2 WARN** at 1440, 768, and 390px. All six
+fold/page screenshot sheets were visually reviewed. Warnings concern the existing type-size
+count and absence of video: the established hierarchy is retained for this motion-only change,
+and no unrelated footage or additional media download is introduced. Entrances use one-shot
+IntersectionObserver/Web Animations; finished animations are released and observers/active
+animations are cleaned up on navigation or reduced-motion changes. The sample's four CSS
+annotation entrances finish once and remain explicitly illustrative.
+
 ## Session restoration (19 November 2026)
 
 The session browser regression uses a separate persistent Chrome profile and an ephemeral
