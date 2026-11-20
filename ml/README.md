@@ -46,8 +46,12 @@ Camera playback uses the native video surface, independently of inference, with 
 overlay in the same aspect-ratio container. There is one live view, with no Analyzed frame selector.
 Overlays may trail moving objects and expire 3-10 seconds after their last result, depending on latency.
 Stop retains the last immutable analyzed snapshot with aligned overlays; saving always uses that snapshot.
-Frames are sampled at a maximum long edge of 960px, with one inference in flight and at least 100ms
-between analyses. JPEG encoding happens on save rather than on every analyzed frame.
+Frames are sampled at a maximum long edge of 960px, with one inference in flight. Live results
+are published progressively as regions are verified. Spatially and visually stable regions can
+reuse label metadata for up to three uses or ten seconds; geometry, confidence, and masks always
+come from the current frame. Scheduling targets a 200ms interval with a minimum 16ms pause after
+a completed frame. JPEG encoding happens on save rather than on every analyzed frame.
+See [scanning performance](../docs/scanning-performance.md) for the implementation and local measurements.
 
 Localization confidence and label cosine similarity are separate measurements. Neither is a calibrated
 probability that a name is correct. Close alternatives are marked uncertain. Similarity thresholds are

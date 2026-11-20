@@ -1,105 +1,129 @@
 # Visionary AI
 
-Browser-based object detection, instance segmentation and counting with SvelteKit, TypeScript,
-Tailwind, shadcn-style Svelte components/Bits UI, Lucide, ONNX Runtime Web and FastAPI.
-Production metadata is stored in Neon PostgreSQL and photos use authenticated Cloudinary storage.
-No AI inference runs on the backend. No Docker or external AI API is used.
+Identify, inspect, and count everyday objects using your camera or a photo.
 
-## Run locally
+Visionary AI highlights objects with bounding boxes and segmentation masks, shows
+what it finds, and lets you save detections in a private workspace. Recognition runs
+in your browser; account services handle saved snapshots, history, and analytics.
 
-Requirements: Node 22+, Python 3.11/3.12, Neon and Cloudinary credentials.
+**[Open Visionary AI](https://visionary-ai-web.vercel.app/)**
 
-1. In `backend`, create a virtual environment: `python -m venv .venv`.
-2. Activate it and run `pip install -r requirements.txt`.
-3. Copy `backend/.env.example` to `backend/.env` and configure real credentials and a random JWT secret.
-4. Run `alembic upgrade head` from `backend`.
-5. Run `npm run dev` from `backend` (FastAPI on port 8001; no npm install needed here).
-6. In `frontend`, run `npm ci`, then `npm run dev`. Open **http://127.0.0.1:5173**.
-7. Prepare the model using the instructions in `ml/README.md`. The exported weight shards and manifests belong in
-   `frontend/static/models/` and is available to both camera and image modes.
+## What you can do
 
-For this workspace, a backend development environment was provisioned at
-`frontend/.venv`; use its `Scripts/python.exe` to run backend commands if desired.
-The real backend `.env` is ignored by Git and never imported into the frontend.
-Use the localhost hostname consistently: cookies and CSRF origins must match `FRONTEND_URL`.
-For local HTTP development with `COOKIE_SECURE=false`, the backend accepts both `localhost`
-and `127.0.0.1` at the configured frontend port. Cookies still belong to the hostname you use,
-so switching between them may require signing in again. Production keeps an exact origin match.
+| Feature | How it works |
+| --- | --- |
+| **Live detection** | Start your camera and see verified detections appear automatically while the video keeps playing. Switch between available cameras and stop to inspect the last analyzed frame. |
+| **Image detection** | Upload a JPG, PNG, or WebP image up to 10 MB, then analyze its objects. |
+| **Visual results** | Choose boxes, masks, or both. Inspect object thumbnails, category counts, confidence scores, and individual predictions. |
+| **Detection controls** | Adjust the confidence threshold and show or hide confidence labels. The threshold filters results without requiring another scan. |
+| **Private snapshots** | Sign in to save an analyzed image together with its detections. Revisit its overlays or delete the snapshot later. |
+| **Detection history** | Browse saved snapshots, search object labels, filter camera versus image uploads, and open snapshot details. |
+| **Overview and analytics** | Review saved-detection totals, object categories, activity, and camera/image sources. Filter analytics by time period. |
+| **Profile and preferences** | Edit your name, change your password, and save default detection and camera preferences. |
+| **Installable PWA** | Install Visionary AI from the account menu and launch it from your Home Screen or desktop. |
+| **Mobile and theme support** | Use responsive navigation and controls on smaller screens. Switch directly between light and dark mode; your choice and browser favicon stay in sync. |
 
-### Menjalankan lagi di VS Code (Windows)
+You can try camera and image detection **without an account**. Sign in to save
+snapshots and use your personal history, analytics, and preferences.
 
-Buka folder `visionary` di VS Code, lalu buka dua terminal PowerShell.
-Terminal pertama untuk backend:
+## How to use it
 
-```powershell
-cd backend
-npm run dev
-```
+1. Open the website and choose **Live detection** or **Image detection**.
+2. Allow camera access and press **Start camera**, or choose a photo and press
+   **Detect objects**.
+3. Inspect the labels, counts, and overlays. Adjust the display settings if needed.
+4. Sign in and choose **Save snapshot** to keep that analyzed image and its results.
+5. Open **Detection history** to revisit a snapshot, or **Analytics** to explore
+   patterns in your saved detections.
 
-Terminal kedua, mulai dari folder utama `visionary`, untuk frontend:
+Live scanning updates automatically: you do not need to move the confidence slider
+to trigger a result. Counts describe the analyzed frame, rather than a running
+total of unique objects across the camera session.
 
-```powershell
-cd frontend
-npm run dev
-```
+## Object recognition
 
-Buka http://127.0.0.1:5173. Dokumentasi backend ada di http://127.0.0.1:8001/docs.
-Biarkan kedua terminal berjalan; tekan Ctrl+C di masing-masing terminal untuk berhenti.
-Jika terminal sudah berada di folder yang benar, cukup jalankan `npm run dev`.
-Script backend otomatis memakai `backend/.venv` atau environment yang sudah tersedia di
-`frontend/.venv`, jadi tidak perlu aktivasi environment secara manual.
-Perintah FastAPI aslinya, dengan environment Python sudah aktif, adalah
-`python -m uvicorn app.main:app --host 127.0.0.1 --port 8001`.
-`alembic upgrade head` hanya diperlukan saat setup awal atau ada migrasi database baru.
-Jika port 5173 sedang dipakai, hentikan frontend sebelumnya dengan Ctrl+C lalu coba lagi.
+The current model vocabulary contains **1,227 category names**, including people,
+vehicles, animals, and everyday items such as wallets, sunglasses, and perfume bottles.
+The About page includes a searchable category guide with suggestions.
 
-## Checks
+Recognition combines **YOLOE-26s** object detection and instance segmentation with
+**MobileCLIP2-S0** label verification. Live results appear progressively as regions
+are verified. Stable regions can briefly reuse verified labels, while their boxes,
+scores, and masks come from the latest analyzed frame.
 
-```sh
-cd frontend
-npm run check
-npm test
-npm run build
-cd ../backend
-python -m pytest -q
-```
+The first scan downloads and prepares the models. Startup and update speed depend
+on your connection, browser, device, and scene. Overlays can trail moving objects.
+A supported category is not a guarantee of a correct detection, and confidence
+scores should not be treated as calibrated probabilities of label correctness.
 
-Backend unit/integration tests use an isolated SQLite schema and a storage adapter stub to test failure paths;
-they never use fake detections in the product. `python tests/smoke_services.py` with `PYTHONPATH=.`
-runs a real Neon + Cloudinary create/save/private-delivery/delete flow and removes its own temporary resources.
-See `docs/testing.md` for browser tests and the latest verification status.
+## Privacy and saved data
 
-## Architecture and operation
+- Camera frames and selected photos are analyzed on your device, inside the browser.
+- Images are uploaded only when you explicitly save a snapshot.
+- Saved images use authenticated Cloudinary storage; account information and
+  detection metadata are stored in Neon PostgreSQL.
+- Saved history and analytics belong to the signed-in account. Analytics count
+  saved detections, not everything viewed through the camera.
 
-- `frontend/`: public site, auth, protected workspace, detection worker, canvas renderer, API client.
-- `backend/`: REST API, Argon2id/JWT/rotating sessions, SQLAlchemy models, migrations, storage integration.
-- `ml/`: reproducible export, comparison, optional training/evaluation and model provenance.
-- `docs/`: deployment, verification, security and design decisions.
+More detail is available in the website's [About → Privacy section](https://visionary-ai-web.vercel.app/about#privacy).
 
-The worker accepts one image at a time. Live frames are capped at 1280px, uploaded images at 1920px.
-The model uses a fixed 640px input. Live snapshots save the same canvas that produced the displayed prediction.
-Visualization and thresholds reuse decoded results. Explicit saves upload compressed JPEG directly to Cloudinary
-using a server-issued signature; the API verifies storage identity, format, size and dimensions before committing metadata.
-Durable upload intents and a deletion outbox let reconciliation recover interrupted saves/deletes.
+## Install the app
 
-Run `python reconcile.py` hourly using your scheduler. This is required to clean orphan uploads and retry
-failed image deletions. API documentation: http://127.0.0.1:8001/docs.
+In the workspace sidebar, click your **account name or avatar**, then **Install app**.
 
-Deployment instructions: `docs/deployment.md`. Model license obligations: `ml/README.md`.
+- **Supported desktop/Android browsers:** the action opens the browser's installer
+  when an installation API is available. Otherwise, it displays browser-specific help.
+- **iPhone/iPad:** open the site in Safari and choose **Share → Add to Home Screen**.
+  Keep **Open as Web App** enabled if shown, then tap **Add**.
 
-## Vision Studio appearance
+Installation does not make every feature available offline. Offline navigation
+shows a reconnect page; signing in, saving or viewing snapshots, and downloading
+models for the first time need an internet connection. The installed app icon keeps
+its fixed dark brand identity, independently of the website's selected theme.
 
-The interface defaults to Dark. The icon in the header (and in Profile & settings) switches
-directly between Light and Dark in one click. The choice is saved in this browser. An older
-System preference is resolved once into a saved Light/Dark choice. Semantic colors and the visual specification are documented in `DESIGN.md`.
+See the [PWA guide](docs/pwa.md) for installation and update behavior.
 
-Detection results include crops from the analyzed frame, and recent account snapshots refresh
-after a successful save. The landing-page desk photograph and sample annotations are illustrative;
-they do not run inference. The WebP photograph adds about 200 KB. Camera frames, user snapshots,
-and model downloads retain the same privacy and on-demand behavior as before the redesign.
+## Run or deploy your own instance
 
-## Broader object recognition (v2)
+Local development requires **Node.js 24.x**, **Python 3.12**, and configured Neon
+and Cloudinary accounts. Follow the [local development guide](docs/local-development.md)
+for setup and startup commands.
 
-The scanner now uses YOLOE-26s plus MobileCLIP2-S0, with 1,227 generated category names, local label verification, integrity-checked cached weights, and uncertainty markers. Run both ML export scripts when regenerating assets. Apply database migration 002 before starting the updated backend. Old snapshots remain viewable without rerunning a model.
+For Vercel, use **two projects** with `frontend` and `backend` as their respective
+Root Directories. The exported browser models are already included in
+`frontend/static/models/`: the `ml` folder is for optional model export, evaluation,
+or training and does **not** need to be deployed.
 
-The selected verifier weights are licensed for non-commercial research, matching this project's confirmed research/task/personal use. License files ship with the model assets; see ml/README.md for reproducibility and limits.
+Follow the [deployment guide](docs/deployment.md) for environment variables, HTTPS
+origins, secure cookies, migrations, and scheduled cleanup. Local `.env` files are
+private and do not automatically populate Vercel's environment settings.
+
+## Technology
+
+| Area | Stack |
+| --- | --- |
+| Interface | SvelteKit, TypeScript, Tailwind CSS, Bits UI, Lucide |
+| Browser recognition | ONNX Runtime Web, WebGPU where supported, WebAssembly fallback |
+| Account and storage API | FastAPI, SQLAlchemy, Argon2, JWT-based sessions |
+| Persistent storage | Neon PostgreSQL and Cloudinary |
+| Hosting | Separate frontend and backend Vercel projects |
+
+## Documentation
+
+| Guide | Contents |
+| --- | --- |
+| [Local development](docs/local-development.md) | Requirements, environment files, startup, and checks |
+| [Deployment](docs/deployment.md) | Vercel setup, production configuration, and cleanup |
+| [PWA](docs/pwa.md) | Installation, offline behavior, icons, and updates |
+| [Testing](docs/testing.md) | Verification results, browser coverage, and device-testing limits |
+| [Scanning performance](docs/scanning-performance.md) | Progressive results, label reuse, and local timing comparisons |
+| [Design](DESIGN.md) | Visual identity, responsive layouts, and interaction guidelines |
+| [Browser models](ml/README.md) | Model exports, vocabulary, evaluation, and upstream licenses |
+
+## Model licenses
+
+The bundled MobileCLIP2 verifier weights use the **Apple Machine Learning Research
+Model license for non-commercial research**. YOLOE/Ultralytics models and tooling
+have their own upstream license terms. This project does not relicense those assets.
+See [model sources and licenses](ml/README.md#licenses) and the license files shipped
+alongside the browser models.
