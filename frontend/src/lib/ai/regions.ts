@@ -10,6 +10,12 @@ function overlap(a:DetectedObject,b:DetectedObject){
  return Math.max(0,Math.min(x[2],y[2])-Math.max(x[0],y[0]))*Math.max(0,Math.min(x[3],y[3])-Math.max(x[1],y[1]));
 }
 
+/** Wait for a larger pending region before presenting a cap/buckle as a new item. */
+export function progressiveRegions(matches:Match[],proposals:DetectedObject[],related:(a:number,b:number)=>boolean):DetectedObject[]{
+ return consolidateRegions(matches,related).filter(a=>!proposals.some(b=>
+  !sceneObjects.has(b.object_name)&&b.confidence>=.35&&area(a)<area(b)*.35&&overlap(a,b)/area(a)>.9));
+}
+
 /** Merge competing proposals for one item; retain spatially separate instances. */
 export function consolidateRegions(matches:Match[],related:(a:number,b:number)=>boolean):DetectedObject[]{
  const same=(a:DetectedObject,b:DetectedObject)=>a.class_id===b.class_id||related(a.class_id,b.class_id);

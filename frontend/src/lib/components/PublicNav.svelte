@@ -1,6 +1,6 @@
 <script lang="ts">
  import {page} from '$app/state';
- import {Scan,ArrowRight,Menu,X} from 'lucide-svelte';
+ import {Scan,ArrowRight,Menu,X,LayoutDashboard} from 'lucide-svelte';
  import {user} from '@lib/session';
  import ThemeSwitch from './ThemeSwitch.svelte';
  let menu=$state(false);
@@ -48,15 +48,18 @@
   <a href={home?'#how-it-works':'/#how-it-works'} aria-current={active==='how-it-works'?'location':undefined} onclick={()=>menu=false}>How it works</a>
   <a href="/about" aria-current={active==='about'?'page':undefined} onclick={()=>menu=false}>About</a>
  </div>
- <div class="nav-actions"><ThemeSwitch/><a class="btn public-auth" class:signed-in={!!$user} href={$user?'/dashboard':'/login'}>{$user?'Dashboard':'Login'}{#if $user} <ArrowRight size={16}/>{/if}</a><button class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Toggle navigation" aria-expanded={menu} aria-controls="public-navigation">{#if menu}<X/>{:else}<Menu/>{/if}</button></div>
+ <div class="nav-actions"><ThemeSwitch/><a class="btn public-auth" class:signed-in={!!$user} href={$user?'/dashboard':'/login'} aria-label={$user?'Dashboard':undefined}>{#if $user}<span class="public-auth-label">Dashboard</span><ArrowRight size={16}/><LayoutDashboard size={20} class="public-auth-compact" aria-hidden="true"/>{:else}Login{/if}</a><button class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Toggle navigation" aria-expanded={menu} aria-controls="public-navigation">{#if menu}<X/>{:else}<Menu/>{/if}</button></div>
 </nav>
 
 <style>
  :global(.studio-landing) .public-nav{position:sticky;top:0;z-index:50;max-width:none;background:var(--bg)}
  .public-links a[aria-current]{color:var(--accent);font-weight:700}
+ .public-auth :global(.public-auth-compact){display:none}
  :global(.studio-landing) .nav-actions>.public-auth{min-height:44px;padding:10px 32px;font-size:15px}
- @media(max-width:600px){:global(.studio-landing) .nav-actions>.public-auth{min-height:44px;padding:10px 24px;font-size:14px}}
+ @media(max-width:600px){:global(.studio-landing) .nav-actions>.public-auth{min-height:44px;padding:10px 16px;font-size:14px}}
  @media(max-width:600px){:global(.studio-landing) .nav-actions>.public-auth.signed-in{padding:10px 14px;font-size:13px}.public-auth.signed-in :global(svg){display:none}}
+ @media(max-width:380px){:global(.studio-landing) .nav-actions>.public-auth.signed-in{width:44px;min-width:44px;padding:10px}.public-auth-label{display:none}.public-auth.signed-in :global(.public-auth-compact){display:block}}
+ @media(max-width:380px){:global(.studio-landing) .nav-actions>.public-auth:not(.signed-in){padding:10px 12px;font-size:13px}}
  @media(max-width:900px){:global(.studio-landing) .public-links.mobile-open{top:100%}}
  @media(min-width:1441px){:global(.studio-landing) .public-nav{padding-left:max(48px,calc((100vw - 1344px)/2));padding-right:max(48px,calc((100vw - 1344px)/2))}}
 </style>

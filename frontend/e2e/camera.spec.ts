@@ -2,6 +2,29 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,existsSync,readFileSync} from 'node:fs';
 import path from 'node:path';
 
+test('verified detections appear at the untouched 50% threshold before a slow frame finishes',async({page,context})=>{
+ await context.route(/inference\.worker.*\.(?:js|ts)(?:\?.*)?$/,route=>route.fulfill({contentType:'text/javascript',body:`
+  self.onmessage=async({data})=>{
+   if(data.type==='init'){postMessage({type:'ready',provider:'wasm'});return;}
+   if(data.type!=='infer')return;
+   await new Promise(resolve=>setTimeout(resolve,250));
+   const objects=[{class_id:1,object_name:'wallet',confidence:.8,bounding_box:[40,40,180,180],segmentation_data:null}];
+   postMessage({type:'progress',id:data.id,latency:250,objects});
+   await new Promise(resolve=>setTimeout(resolve,3500));data.bitmap.close();
+   postMessage({type:'result',id:data.id,latency:3750,objects});
+  };
+ `}));
+ await page.goto('/detect/live');await page.locator('html[data-app-ready=true]').waitFor();
+ await expect(page.locator('#threshold')).toHaveValue('0.5');
+ await page.getByRole('button',{name:'Start camera',exact:true}).first().click();
+ await expect(page.locator('.object-counts')).toContainText('wallet',{timeout:2000});
+ await expect(page.locator('#threshold')).toHaveValue('0.5');
+ await expect(page.locator('.live-camera .detection-overlay')).toBeVisible();
+ await expect(page.locator('.panel-heading').first()).toContainText('Updating detections');
+ await page.getByRole('button',{name:'Stop camera'}).click();
+ await expect(page.locator('.object-counts')).toContainText('wallet');
+});
+
 test('camera keeps playing with visible detection overlays during slow inference',async({page,context})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  // Deliberately slow model: playback must remain independent of result delivery.
@@ -73,10 +96,13 @@ test('real camera pipeline recognizes several objects in one frame',async({page}
  await expect(page.locator('.live-camera .detection-overlay')).toBeVisible({timeout:150000});
  console.log('MULTI DEFAULT:',await page.locator('.object-counts').allTextContents());
  await expect(page.locator('.object-counts')).toContainText('wallet');
- await expect(page.locator('.object-counts')).toContainText('sunglasses');
- await expect(page.locator('.object-counts')).toContainText('perfume');
- await expect(page.locator('.count-pill')).toHaveText('3');
+ await expect(page.locator('.object-counts')).toContainText('sunglasses',{timeout:150000});
+ await expect(page.locator('.object-counts')).toContainText('perfume',{timeout:150000});
+ await expect(page.locator('.count-pill')).toHaveText('3',{timeout:150000});
  await page.locator('#threshold').fill('0.35');
+ // A progressive update is not a promise that all candidates have finished.
+ await expect(page.locator('.object-counts')).toContainText('spotlight',{timeout:150000});
+ await expect(page.locator('.count-pill')).toHaveText('4',{timeout:150000});
  console.log('MULTI LOW:',await page.locator('.object-counts').allTextContents());
  await page.getByRole('button',{name:'Stop camera'}).click();
  mkdirSync('../.taste-skill/camera',{recursive:true});

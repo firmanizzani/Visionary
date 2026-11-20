@@ -231,6 +231,30 @@ validation report for v2 rather than interpreting the old 80-class results as a 
 
 ## Limits of verification
 
+Final mobile and scanning verification on 20 November 2026: **35 Playwright scenarios
+passed** on the Vercel-adapter production build. The populated-page matrix covers
+320–1440px in both themes; header geometry checks additionally cover guest and
+account states at 320, 360, 375, 390, 430, 600, 768 and 1050px. Theme/menu controls
+align within one pixel and remain inside their headers, with 44px touch targets;
+the initial camera action is fully visible at 320×568. Sticky header access, menu
+focus restoration, public active-section navigation, auth layouts and the scanning/
+storage/session regressions all passed. Svelte check reported **0 errors, 0 warnings**.
+The design inspector reported **0 FAIL** and one content-height warning at tablet
+width; independent camera/results/settings heights are intentionally preserved,
+as documented in DESIGN.md, rather than stretching empty panels to match.
+
+Live-scanning verification on 20 November 2026: **33 Playwright scenarios** and
+**28 frontend unit tests** passed on the production scanner build. Coverage includes
+verified results at the untouched 50% threshold before a slow frame finishes,
+real multi-object camera recognition, stable-region cache rejection/expiry,
+partial-component suppression, image segmentation, exact-frame storage, login,
+PWA and mobile layouts. Svelte check reported **0 errors and 0 warnings** and the
+Vercel adapter build passed. An actual ONNX/WASM fixture comparison measured first
+visible detections at about 4.9 seconds versus 18.9 seconds in the previous build;
+two subsequent stable-scene frames completed in about 1.03 seconds each. This is
+a local simulated-camera comparison, not physical-phone latency or universal FPS.
+See [scanning-performance.md](scanning-performance.md) for the method and limits.
+
 Final PWA verification on 20 November 2026: **30 Playwright scenarios passed** on
 the production build, including the real service worker, native-install invocation
 with user activation, cancellation/rejection handling, account-menu controls,

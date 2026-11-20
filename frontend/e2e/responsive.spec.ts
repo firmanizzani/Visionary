@@ -25,6 +25,50 @@ async function seed(page:import('@playwright/test').Page){
  });
 }
 
+test('mobile headers align theme controls and keep every action reachable for guests and accounts',async({page})=>{
+ test.setTimeout(120000);await seed(page);
+ let signedIn=true;
+ await page.route('**/api/v1/auth/me',route=>signedIn?route.fulfill({json:{id:'responsive-account',full_name:'Alex Morgan',email:'layout@example.com',created_at:'2026-11-19T00:00:00Z'}}):route.fulfill({status:401,json:{detail:'Not authenticated'}}));
+ mkdirSync('../.taste-skill/mobile-header',{recursive:true});
+ for(const account of [true,false]){
+  signedIn=account;
+  for(const route of ['/','/about','/detect/live','/detect/image','/dashboard','/login','/register']){
+   await page.setViewportSize({width:390,height:844});await page.goto(route);await page.locator('html[data-app-ready=true]').waitFor();
+   if(account&&route!=='/login'&&route!=='/register'){
+    if(route==='/'||route==='/about')await expect(page.locator('.public-auth')).toHaveAttribute('href','/dashboard');
+    else await expect(page.locator('.account strong')).toHaveText('Alex Morgan');
+   }
+   for(const mode of ['dark','light']){
+    await chooseTheme(page,mode);
+    for(const width of [320,360,375,390,430,600,768,1050]){
+     await page.setViewportSize({width,height:844});await page.evaluate(()=>scrollTo(0,0));
+     const issues=await page.evaluate(()=>{
+      const header=document.querySelector('.workspace-top,.public-nav,.auth-header')!,bounds=header.getBoundingClientRect();
+      const controls=Array.from(header.querySelectorAll<HTMLElement>('button,a')).filter(node=>node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden'&&!node.closest('.public-links'));
+      const theme=header.querySelector('.theme-toggle')!.getBoundingClientRect();
+      return {overflow:document.documentElement.scrollWidth>innerWidth,
+       controls:controls.filter(node=>{const r=node.getBoundingClientRect();return r.left<0||r.right>innerWidth+1||r.top<bounds.top-1||r.bottom>bounds.bottom+1||r.height<43||Math.abs(r.y+r.height/2-(theme.y+theme.height/2))>1;}).map(node=>node.getAttribute('aria-label')||node.textContent),
+       themeHit:header.querySelector('.theme-toggle')!.contains(document.elementFromPoint(theme.x+theme.width/2,theme.y+theme.height/2))};
+     });
+     expect(issues,{message:`${route} ${width}px ${mode} signedIn=${account}`}).toEqual({overflow:false,controls:[],themeHit:true});
+     if(width===390)await page.screenshot({path:`../.taste-skill/mobile-header/${route.replaceAll('/','-')||'home'}-${mode}-${account?'account':'guest'}.png`,animations:'disabled'});
+    }
+   }
+  }
+ }
+});
+
+test('small-phone camera start and sticky theme controls remain visible without overlap',async({page})=>{
+ await seed(page);await page.setViewportSize({width:320,height:568});await page.goto('/detect/live');await page.locator('html[data-app-ready=true]').waitFor();
+ await expect(page.getByRole('button',{name:'Start camera',exact:true}).first()).toBeInViewport({ratio:1});
+ await page.evaluate(()=>scrollTo(0,500));
+ const header=await page.locator('.workspace-top').boundingBox();expect(header!.y).toBe(0);
+ await expect(page.getByRole('button',{name:/Switch to (light|dark) mode/})).toBeInViewport({ratio:1});
+ await page.getByRole('button',{name:'Open menu',exact:true}).click();
+ await expect(page.getByRole('link',{name:'Profile & settings',exact:true})).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'Open menu',exact:true})).toBeFocused();
+});
+
 test('responsive audit with populated screens and long content',async({page})=>{
  test.setTimeout(180000);await seed(page);await page.emulateMedia({reducedMotion:'reduce'});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));

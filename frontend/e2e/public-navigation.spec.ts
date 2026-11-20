@@ -65,6 +65,7 @@ test('public pages fit both themes and mobile menu links return to landing secti
  await expect(toggle).toHaveAttribute('aria-expanded','true');
  await page.getByRole('navigation',{name:'Main navigation',exact:true}).getByRole('link',{name:'Features',exact:true}).click();
  await expect(page).toHaveURL(/\/#features$/);await expect(toggle).toHaveAttribute('aria-expanded','false');
+ await expect(page.locator('.public-links a[href="#features"]')).toHaveAttribute('aria-current','location');
  await expect.poll(()=>page.locator('#features').evaluate(node=>node.getBoundingClientRect().top)).toBeGreaterThanOrEqual(82);
  await expect(page.getByRole('link',{name:'Privacy',exact:true})).toHaveAttribute('href','/about#privacy');
 });

@@ -204,8 +204,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 
 /* Keep the workspace header compact after removing its breadcrumb. */
 .workspace .workspace-top{height:52px;flex-shrink:0}
-.workspace .workspace-top .top-right{position:relative;top:8px}
+.workspace .workspace-top .top-right{position:static}
 .workspace .app-main{padding-top:24px}
+.workspace-mobile-brand{display:none}
 
 /* Compact appearance control: one icon toggles Light and Dark. */
 .theme-switch{display:inline-flex;flex-direction:row;gap:0}
@@ -215,3 +216,58 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 /* Auth refinement keeps familiar forms and gives their fields clear visual anchors. */
 @media(max-width:600px){.theme-toggle{width:44px;height:44px}.studio-landing .nav-actions>.public-auth{display:inline-flex;font-size:13px;min-height:44px;padding:10px 12px;gap:7px}.studio-landing .public-nav{gap:10px}.studio-landing .public-nav .brand{font-size:21px;gap:7px}.studio-landing .public-nav .brand>svg{width:25px}.studio-landing .nav-actions{gap:8px}.studio-landing .nav-actions .mobile-menu{padding:6px;min-width:36px}}
 @media(max-width:380px){.studio-landing .public-nav{padding:0 14px;gap:6px}.studio-landing .public-nav .brand{font-size:18px;gap:5px}.studio-landing .public-nav .brand>svg{width:22px}.studio-landing .nav-actions{gap:4px}.studio-landing .nav-actions>.public-auth{padding:10px;font-size:12px}.studio-landing .nav-actions .mobile-menu{min-width:32px;padding:4px}}
+
+/* Mobile chrome: one aligned 44px control row, clear identity, no vertical offsets. */
+@media(max-width:1050px){
+ .theme-toggle{width:44px;height:44px}
+ .auth-header .brand,.studio-landing .public-nav>.brand{min-height:44px}
+ .studio-landing .nav-actions .mobile-menu{display:none}
+ .studio-landing .public-links>a{min-height:44px;display:inline-flex;align-items:center}
+ .workspace .workspace-top{position:sticky;top:0;z-index:20;height:calc(64px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0;background:var(--bg);border-bottom:1px solid var(--border);gap:8px}
+ .workspace .workspace-top>div{min-width:0;gap:8px}
+ .workspace .workspace-top .top-right{gap:10px!important;flex-shrink:0}
+ .workspace .workspace-mobile-brand{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--ink);font-size:18px;font-weight:700;letter-spacing:-.04em;white-space:nowrap}
+ .workspace-mobile-brand>svg{flex-shrink:0;color:var(--accent)}
+ .workspace-mobile-brand .brand-ai{font-size:10px;letter-spacing:0;margin-inline-start:3px}
+ .workspace .workspace-top .mobile-menu,.workspace .workspace-top .theme-toggle{width:44px;height:44px;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+ .workspace-top .top-right>a{min-height:44px;display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
+ .workspace aside{padding-top:max(24px,env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+ .workspace aside .brand{font-size:22px;gap:8px}
+ .workspace .mobile-close{top:max(18px,env(safe-area-inset-top,0px));right:12px;width:44px;height:44px}
+}
+@media(max-width:900px){
+ .studio-landing .nav-actions .mobile-menu{width:44px;min-width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+ .studio-landing .public-links.mobile-open{gap:4px;padding:12px;align-items:stretch;max-height:calc(100dvh - 96px);overflow:auto}
+ .studio-landing .public-links.mobile-open>a{padding:0 12px}
+}
+@media(max-width:600px){
+ .studio-landing .public-nav{height:calc(72px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);gap:8px}
+ .studio-landing .nav-actions{gap:8px;flex-shrink:0}
+ .studio-landing .nav-actions .mobile-menu{width:44px;min-width:44px;height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+ .workspace .app-main{padding:20px 16px 28px}
+ .workspace .viewport-empty{padding:34px 20px}
+ .workspace .viewport-empty h2{font-size:22px}
+ .workspace .viewport-empty p{line-height:1.65}
+ .workspace .inference-strip{flex-wrap:wrap;row-gap:6px;font-size:11px}
+ .workspace .panel-heading>span{overflow-wrap:anywhere}
+ .workspace .history-toolbar{flex-wrap:wrap}
+}
+@media(max-width:380px){
+ .workspace .workspace-top{padding-inline:12px}
+ .workspace .workspace-mobile-brand{font-size:16px;gap:5px}
+ .workspace-mobile-brand>svg{width:18px}
+ .workspace .workspace-top .top-right{gap:6px!important}
+ .workspace .page-title{flex-wrap:wrap;align-items:flex-start}
+ .workspace .page-title>div{flex-basis:100%;min-width:0}
+ .workspace .page-title h1{font-size:24px}
+ .workspace .page-title p{max-width:none}
+ .workspace .page-title>select{width:100%}
+ .workspace .viewport-toolbar{display:grid;grid-template-columns:1fr}
+ .workspace .viewport-toolbar>div{min-width:0;gap:8px}
+ .workspace .viewport-toolbar>div>.btn:first-child{flex:1;justify-content:center}
+ .workspace .viewport-toolbar>.btn{width:100%;justify-content:center}
+ .workspace .viewport-empty{padding:28px 16px}
+ .workspace .viewport:not(.has-image){min-height:280px}
+ .workspace .viewport-empty .reticle{display:none}
+ .workspace .viewport-empty p{margin-bottom:18px}
+}

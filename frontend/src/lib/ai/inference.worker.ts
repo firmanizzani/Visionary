@@ -2,12 +2,22 @@ import * as ort from 'onnxruntime-web/webgpu';
 import { decode, iou, letterbox } from './math';
 import { loadAsset, sha256 } from './assets';
 import { MODEL, VERIFIER } from './model';
-import {consolidateRegions,establishedClasses} from './regions';
+import {consolidateRegions,progressiveRegions,establishedClasses} from './regions';
+import {VerificationCache} from './verification-cache';
 import type { DetectedObject } from '@lib/types';
 
 let session:ort.InferenceSession|null=null,verifier:ort.InferenceSession|null=null;
 let embeddings:Float32Array,loading:Promise<void>|null=null,provider='wasm';
 const status=(message:string)=>postMessage({type:'status',message});
+const labelCache=new VerificationCache();let liveSession='',cacheWidth=0,cacheHeight=0;
+const fingerprintCanvas=new OffscreenCanvas(16,16),fingerprintContext=fingerprintCanvas.getContext('2d',{willReadFrequently:true})!;
+function fingerprint(bitmap:ImageBitmap,object:DetectedObject){
+ const [x1,y1,x2,y2]=object.bounding_box;
+ fingerprintContext.drawImage(bitmap,x1,y1,x2-x1,y2-y1,0,0,16,16);
+ const rgba=fingerprintContext.getImageData(0,0,16,16).data,pixels=new Uint8Array(16*16*3);
+ for(let i=0;i<256;i++){pixels[i*3]=rgba[i*4];pixels[i*3+1]=rgba[i*4+1];pixels[i*3+2]=rgba[i*4+2];}
+ return pixels;
+}
 // These well-trained geometry classes should not be renamed from a crop whose clothing or
 // background dominates CLIP. Ambiguous everyday goods still require independent matching.
 
@@ -90,7 +100,11 @@ self.onmessage=async({data})=>{
  try{
   if(data.type==='init'){loading??=init(data.url||undefined).catch(e=>{loading=null;throw e;});await loading;return;}
   if(data.type!=='infer'||!session||!verifier)return;
+  const cameraSession=data.live?String(data.sessionId||''):'';
+  if(!cameraSession||cameraSession!==liveSession)labelCache.clear();
+  liveSession=cameraSession;
   const bitmap:ImageBitmap=data.bitmap,{width,height}=bitmap;
+  if(width!==cacheWidth||height!==cacheHeight){labelCache.clear();cacheWidth=width;cacheHeight=height;}
   try{
    const start=performance.now(),size=MODEL.inputSize,c=new OffscreenCanvas(size,size),ctx=c.getContext('2d',{willReadFrequently:true})!;
    const {padX,padY,resizedWidth,resizedHeight}=letterbox(width,height,size);
@@ -102,19 +116,49 @@ self.onmessage=async({data})=>{
     objects=decode(pred.data as Float32Array,pred.dims,proto.data as Float32Array,proto.dims,width,height,.1,MODEL,20);
    }finally{tensor.dispose();Object.values(outputs).forEach(t=>t.dispose());}
    const verified:{object:DetectedObject;geometryMatch:boolean}[]=[];
-   const scene=new OffscreenCanvas(VERIFIER.inputSize,VERIFIER.inputSize),sc=scene.getContext('2d')!;
-   const side=Math.min(width,height);sc.drawImage(bitmap,(width-side)/2,(height-side)/2,side,side,0,0,VERIFIER.inputSize,VERIFIER.inputSize);
-   const context=classify(await embed(scene));
+   let context:ReturnType<typeof classify>|null=null;
    // Global context is safe only for a single cluster. A separate item elsewhere in
    // the scene must get its own label, even if the leading proposal is a small part.
    const leading=objects[0];
    const multipleRegions=leading&&objects.some(o=>o.confidence>=.4&&iou(o.bounding_box,leading.bounding_box)<.05);
-   // The detector proposes geometry. Independent crop embeddings determine the label.
-   for(const [index,object] of objects.slice(0,20).entries()){
-    if(establishedClasses.has(object.object_name)&&object.confidence>=.65){verified.push({object,geometryMatch:true});continue;}
-    const result=await verifyLabel(bitmap,object,index===0&&!multipleRegions?context:null);if(!result)continue;
+   let lastPublished=-Infinity;
+   const publish=()=>{
+    const now=performance.now();
+    if(data.live&&verified.length&&now-lastPublished>=150){
+     const preview=progressiveRegions(verified,objects,relatedLabels);
+     if(preview.length){postMessage({type:'progress',objects:preview,latency:now-start,id:data.id});lastPublished=now;}
+    }
+   };
+   const accept=(object:DetectedObject,result:DetectedObject)=>{
     const geometryMatch=object.class_id===result.class_id||relatedLabels(object.class_id,result.class_id)||result.object_name.split(' ').includes(object.object_name);
     verified.push({object:result,geometryMatch});
+   };
+   const candidates=objects.slice(0,20).map((object,index)=>{
+    const established=establishedClasses.has(object.object_name)&&object.confidence>=.65;
+    const pixels=!established&&data.live?fingerprint(bitmap,object):null;
+    const cached=pixels?labelCache.get(object,pixels,performance.now()):null;
+    if(established)verified.push({object,geometryMatch:true});
+    else if(cached?.label)accept(object,{...object,...cached.label});
+    return {object,index,established,pixels,cached};
+   });
+   // Publish every current-frame established/cached region together, so a slow
+   // new candidate does not hide the other stable, already-verified objects.
+   publish();
+   // The detector proposes geometry. Independent crop embeddings determine the label.
+   for(const {object,index,established,pixels,cached} of candidates){
+    if(established||cached)continue;
+     // Scene context is only consumed by the leading ambiguous region. Do not
+     // run a redundant verifier pass for established classes or crowded scenes.
+     if(index===0&&!multipleRegions){
+      const scene=new OffscreenCanvas(VERIFIER.inputSize,VERIFIER.inputSize),sc=scene.getContext('2d')!;
+      const side=Math.min(width,height);sc.drawImage(bitmap,(width-side)/2,(height-side)/2,side,side,0,0,VERIFIER.inputSize,VERIFIER.inputSize);
+      context=classify(await embed(scene));
+     }
+    const result=await verifyLabel(bitmap,object,index===0&&!multipleRegions?context:null);
+    if(pixels)labelCache.put(object,pixels,result,performance.now());
+    if(!result)continue;
+    accept(object,result);
+    publish();
    }
    postMessage({type:'result',objects:consolidateRegions(verified,relatedLabels),latency:performance.now()-start,id:data.id});
   }finally{bitmap.close();}

@@ -1,9 +1,10 @@
 import { env } from '@lib/env';
 import type { DetectedObject } from '@lib/types';
-type Result={objects:DetectedObject[];latency:number};
+export type Result={objects:DetectedObject[];latency:number};
+type InferOptions={live?:boolean;sessionId?:string;onProgress?:(result:Result)=>void};
 let worker:Worker | null=null, ready:Promise<void> | null=null, busy=false, seq=0;
 let inFlight:Promise<Result>|null=null;
-const pending=new Map<number,{resolve:(r:Result)=>void;reject:(e:Error)=>void}>();
+const pending=new Map<number,{resolve:(r:Result)=>void;reject:(e:Error)=>void;onProgress?:(result:Result)=>void}>();
 export async function initialize(status:(s:string)=>void):Promise<void> {
  if(ready)return ready;
  ready=new Promise((resolve,reject)=>{
@@ -11,6 +12,7 @@ export async function initialize(status:(s:string)=>void):Promise<void> {
   worker.onmessage=({data})=>{
    if(data.type==='status')status(data.message);
    if(data.type==='ready'){status(`Model ready · ${data.provider.toUpperCase()}`);resolve();}
+   if(data.type==='progress')pending.get(data.id)?.onProgress?.(data);
    if(data.type==='result'||data.type==='error'){
     const p=pending.get(data.id);if(p){pending.delete(data.id);busy=false;data.type==='error'?p.reject(new Error(data.message)):p.resolve(data);}
     else if(data.type==='error'){worker?.terminate();worker=null;ready=null;reject(new Error(data.message));}
@@ -21,12 +23,12 @@ export async function initialize(status:(s:string)=>void):Promise<void> {
  });
  return ready;
 }
-export async function infer(bitmap:ImageBitmap):Promise<Result>{
+export async function infer(bitmap:ImageBitmap,options:InferOptions={}):Promise<Result>{
  // A stopped camera can still have one frame inside the worker. Let it finish before a new session.
  if(inFlight)await inFlight.catch(()=>{});
  if(!worker){bitmap.close();throw new Error('The model is not ready. Start detection again.');}
  busy=true; const id=++seq;
- const request=new Promise<Result>((resolve,reject)=>{pending.set(id,{resolve,reject});worker!.postMessage({type:'infer',bitmap,id},[bitmap]);});
+ const request=new Promise<Result>((resolve,reject)=>{pending.set(id,{resolve,reject,onProgress:options.onProgress});worker!.postMessage({type:'infer',bitmap,id,live:options.live??false,sessionId:options.sessionId},[bitmap]);});
  inFlight=request;
  try{return await request;}finally{if(inFlight===request)inFlight=null;}
 }

@@ -1,8 +1,13 @@
 import {describe,it,expect} from 'vitest';
-import {consolidateRegions} from './regions';
+import {consolidateRegions,progressiveRegions} from './regions';
 import type {DetectedObject} from '@lib/types';
 const region=(name:string,id:number,box:[number,number,number,number],confidence=.8,geometryMatch=false)=>({object:{object_name:name,class_id:id,bounding_box:box,confidence,segmentation_data:null} satisfies DetectedObject,geometryMatch});
 describe('multiple object regions',()=>{
+ it('does not flash a component while its larger candidate is still being checked',()=>{
+  const cap=region('canister',2,[35,0,65,35]),wallet=region('wallet',4,[250,100,290,130]);
+  const proposals=[region('bottle',1,[0,0,100,200]).object,region('person',3,[200,0,400,400]).object];
+  expect(progressiveRegions([cap,wallet],proposals,()=>false).map(o=>o.object_name)).toEqual(['wallet']);
+ });
  it('keeps separate instances of the same category',()=>{
   expect(consolidateRegions([region('bottle',1,[0,0,30,80]),region('bottle',1,[60,0,90,80])],()=>false)).toHaveLength(2);
   expect(consolidateRegions([region('bottle',1,[0,0,100,100],.8,true),region('bottle',1,[50,0,150,100],.7,true)],()=>false)).toHaveLength(2);

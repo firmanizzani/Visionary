@@ -80,6 +80,13 @@ long names remain readable. Mobile workspace navigation acts as a dismissible mo
 background inert, keyboard focus contained/restored, body scroll locked, and contents scrollable
 within the dynamic viewport. Public Dashboard navigation uses a compact phone treatment.
 
+On folded-sidebar layouts, the workspace header is a sticky 64px row plus the top safe-area
+inset. Menu, compact product identity and theme/account controls share one vertical center;
+do not apply positional offsets to the right-side controls. Interactive header targets are
+at least 44px. On phones at 380px or less, the public Dashboard action uses a labeled icon
+to reserve room for the theme switch and menu; Login keeps its text. Narrow detection titles
+wrap their secondary action onto another row, and their camera toolbar stacks cleanly.
+
 Landing inspection deliberately allows `still-page`: the annotation toggle supplies interaction,
 and camera video starts only after an explicit user action in the workspace. No decorative video
 or automatic motion is added to compete with inference or consume additional bandwidth. The
