@@ -19,7 +19,6 @@
  let path=$derived(page.url.pathname);
  const nav=[{href:'/dashboard',label:'Overview',icon:LayoutDashboard},{href:'/detect/live',label:'Live detection',icon:Video},{href:'/detect/image',label:'Image detection',icon:Image},{href:'/history',label:'Detection history',icon:History},{href:'/analytics',label:'Analytics',icon:ChartNoAxesCombined}];
  let workspace=$derived(!['/','/about','/login','/register'].includes(path));
- let title=$derived(nav.find(n=>path.startsWith(n.href))?.label || (path==='/settings'?'Profile & settings':'Detection details'));
  onMount(()=>{
   document.documentElement.dataset.appReady='true';void loadSession();
   const query=matchMedia('(max-width:1050px)'),sync=()=>compact=query.matches;
@@ -58,6 +57,6 @@
    <div class="sidebar-bottom"><div class="privacy-note"><ShieldCheck size={19}/><strong>Private by design</strong><p>Your camera stays on your device. You choose what to save.</p><a href="/#how-it-works">How it works <ArrowUpRight size={13}/></a></div><a href="/settings" class:active={path==='/settings'}><Settings size={18}/>Profile & settings</a>
    <div class="account"><span class="avatar">{$user?.full_name.charAt(0).toUpperCase() || 'G'}</span><div><strong>{$user?.full_name || 'Guest workspace'}</strong><small>{$user?'Personal account':'Explore without an account'}</small></div>{#if $user}<button class="icon-btn" onclick={logout} aria-label="Sign out"><LogOut size={16}/></button>{:else}<a href="/login" aria-label="Sign in"><ArrowUpRight size={17}/></a>{/if}</div></div>
   </aside>
-  <div class="workspace-body" inert={compact&&menu}><header class="workspace-top"><div><button bind:this={menuButton} class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Open menu" aria-expanded={menu} aria-controls="workspace-navigation"><Menu size={20}/></button><span>Workspace</span><ChevronRight size={13}/><strong>{title}</strong></div><div class="top-right"><ThemeSwitch/><span class="local-badge"><span class="tiny-dot"></span>On-device AI</span>{#if !$user}<a href="/login">Sign in <ArrowUpRight size={15}/></a>{:else}<span class="avatar small">{$user.full_name.charAt(0)}</span>{/if}</div></header><main class="app-main">{@render children()}</main><footer class="app-footer"><span>Visionary AI · See beyond the obvious.</span><span>YOLOE segmentation <span class="tiny-dot"></span> Browser inference</span></footer></div>
+  <div class="workspace-body" inert={compact&&menu}><header class="workspace-top"><div><button bind:this={menuButton} class="icon-btn mobile-menu" onclick={()=>menu=!menu} aria-label="Open menu" aria-expanded={menu} aria-controls="workspace-navigation"><Menu size={20}/></button></div><div class="top-right"><ThemeSwitch/><span class="local-badge"><span class="tiny-dot"></span>On-device AI</span>{#if !$user}<a href="/login">Sign in <ArrowUpRight size={15}/></a>{/if}</div></header><main class="app-main">{@render children()}</main><footer class="app-footer"><span>Visionary AI · See beyond the obvious.</span><span>YOLOE segmentation <span class="tiny-dot"></span> Browser inference</span></footer></div>
  </div>
 {:else}{@render children()}{/if}
