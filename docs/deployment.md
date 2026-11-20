@@ -11,11 +11,24 @@ Only `.env` and `.env.example` are used in each application folder. `.env` is pr
 | Root Directory | `frontend` | `backend` |
 | Framework | SvelteKit | FastAPI |
 | Runtime | Node.js 24.x | Python 3.12 |
-| Install | `npm ci` | Python dependencies detected from `requirements.txt` |
+| Install | `npm ci` | Automatic Python install from `pyproject.toml` |
 | Build | `npm run build` | FastAPI preset; leave custom Build Command unset |
 | Entrypoint | SvelteKit adapter | `app.main:app` in `pyproject.toml` |
 
 The backend uses the current FastAPI preset and a single Python function, with a 60-second limit and a daily cleanup cron. The frontend's `prebuild` rejects missing, local, or placeholder production backend origins. Do not set a static Output Directory or deploy from the repository root.
+
+The backend's `pyproject.toml` declares every runtime dependency as well as the entrypoint.
+Keep its dependency list aligned with `requirements.txt` (checked by the backend tests).
+`uv.lock` pins the resolved project dependencies for repeatable Vercel installations.
+A tool-only `pyproject.toml` can select project installation without installing the packages
+listed separately in `requirements.txt`; that produced a deployed `No module named 'fastapi'`
+error. Leave the backend Install Command override off and redeploy without the previous
+build cache after updating this configuration.
+
+The correction was checked with a fresh `uv sync --no-dev` environment: importing
+`app.main` with production configuration and requesting `/api/v1/health` both passed.
+The backend test suite passed 9 tests. Cloud deployment still needs a new build to
+pick up these files; redeploying an older commit will retain the missing dependency.
 
 ## Frontend environment
 

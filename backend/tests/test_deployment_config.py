@@ -1,5 +1,16 @@
 from app.config import Config
 import pytest
+from pathlib import Path
+import tomllib
+
+
+def test_project_declares_every_runtime_dependency():
+    root = Path(__file__).resolve().parents[1]
+    project = tomllib.loads((root/'pyproject.toml').read_text())
+    requirements = {line.strip() for line in (root/'requirements.txt').read_text().splitlines() if line.strip() and not line.startswith('#')}
+    assert set(project['project']['dependencies']) == requirements
+    assert any(item.startswith('fastapi==') for item in project['project']['dependencies'])
+    assert project['tool']['vercel']['entrypoint'] == 'app.main:app'
 
 def settings(**overrides):
     values=dict(database_url='postgresql://user:pass@database.example/test?sslmode=require',jwt_secret_key='a'*48,frontend_url='https://web.example',cookie_secure=True,cloudinary_cloud_name='test',cloudinary_api_key='test-key',cloudinary_api_secret='test-secret',cron_secret='b'*48)
