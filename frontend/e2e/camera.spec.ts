@@ -2,10 +2,11 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,existsSync,readFileSync} from 'node:fs';
 import path from 'node:path';
 
-test('camera keeps playing with visible detection overlays during slow inference',async({page})=>{
+test('camera keeps playing with visible detection overlays during slow inference',async({page,context})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  // Deliberately slow model: playback must remain independent of result delivery.
- await page.route(/inference\.worker.*\.(?:js|ts)(?:\?.*)?$/,route=>route.fulfill({contentType:'text/javascript',body:`
+ // Context routing also sees requests forwarded by the production PWA worker.
+ await context.route(/inference\.worker.*\.(?:js|ts)(?:\?.*)?$/,route=>route.fulfill({contentType:'text/javascript',body:`
   self.onmessage=async({data})=>{
    if(data.type==='init'){postMessage({type:'ready',provider:'wasm'});return;}
    if(data.type==='infer'){

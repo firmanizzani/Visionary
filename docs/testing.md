@@ -231,6 +231,19 @@ validation report for v2 rather than interpreting the old 80-class results as a 
 
 ## Limits of verification
 
+Final PWA verification on 20 November 2026: **30 Playwright scenarios passed** on
+the production build, including the real service worker, native-install invocation
+with user activation, cancellation/rejection handling, account-menu controls,
+iPhone guidance, offline/reconnect navigation and private-cache exclusions. Chrome
+reported no manifest/installability errors in a persistent profile. Actual model
+inference, camera playback, real account/Cloudinary save/delete and persistent-login
+regressions passed alongside the PWA scenarios. Svelte check reported **0 errors,
+0 warnings**; the worker's separate TypeScript check and Vercel adapter build passed.
+The **23 frontend unit tests** also passed. Native installation consent is mocked;
+physical iPhone installation still requires device acceptance. See [pwa.md](pwa.md).
+The slow-inference camera fixture now uses browser-context routing so Playwright
+can intercept worker requests forwarded by the PWA service worker as well.
+
 Deployment setup verification on 20 November 2026: **22 Playwright scenarios passed**
 against the built frontend on port 5194 and the real backend on port 8005, through the
 same SvelteKit API proxy used in production. This included persistent login after a
