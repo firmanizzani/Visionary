@@ -1,7 +1,7 @@
 <script lang="ts">
  import ThemeSwitch from './ThemeSwitch.svelte';
  import { goto } from '$app/navigation';
- import { Scan, ArrowUpRight, ArrowRight, ShieldCheck, Eye, EyeOff, Mail, LockKeyhole, UserRound, UserRoundPlus, LogIn, LoaderCircle } from 'lucide-svelte';
+ import { Scan, ArrowUpRight, ShieldCheck, Eye, EyeOff, Mail, LockKeyhole, UserRound, UserRoundPlus, LogIn, LoaderCircle } from 'lucide-svelte';
  import { api,json } from '@lib/api';
  import { setSession, loadSession } from '@lib/session';
  import Button from './ui/button.svelte';
@@ -25,7 +25,7 @@
     <label for="auth-password">Password<span class="auth-input"><LockKeyhole size={18}/><input id="auth-password" required minlength="8" maxlength="128" type={show?'text':'password'} autocomplete={register?'new-password':'current-password'} bind:value={password} placeholder={register?'At least 8 characters':'Enter your password'} disabled={busy}/><button type="button" class="icon-btn" aria-label={show?'Hide password':'Show password'} aria-pressed={show} onclick={()=>show=!show}>{#if show}<EyeOff size={18}/>{:else}<Eye size={18}/>{/if}</button></span></label>
     {#if register}<label for="auth-confirm">Confirm password<span class="auth-input"><LockKeyhole size={18}/><input id="auth-confirm" required minlength="8" type={show?'text':'password'} autocomplete="new-password" bind:value={confirm} placeholder="Enter your password again" disabled={busy}/></span></label>{/if}
     {#if error}<div class="notice error" role="alert">{error}</div>{/if}
-    <Button type="submit" disabled={busy}>{#if busy}<LoaderCircle size={18} class="spin"/>{:else if register}<UserRoundPlus size={18}/>{:else}<LogIn size={18}/>{/if}{busy?'Please wait...':register?'Create account':'Sign in'}{#if !busy}<ArrowRight size={18}/>{/if}</Button>
+    <Button type="submit" disabled={busy}>{#if busy}<LoaderCircle size={18} class="spin"/>{:else if register}<UserRoundPlus size={18}/>{:else}<LogIn size={18}/>{/if}{busy?'Please wait...':register?'Create account':'Sign in'}</Button>
    </form>
    <p class="auth-switch">{register?'Already have an account?':'New to Visionary AI?'} <a href={register?'/login':'/register'}>{register?'Sign in':'Create an account'}</a></p>
    <div class="auth-guest"><a href="/detect/image">Explore without an account <ArrowUpRight size={15}/></a></div>

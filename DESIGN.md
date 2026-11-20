@@ -39,6 +39,9 @@ Workspace pages retain immediate rendering; reduced motion keeps the landing pag
   there for old bookmarks. Plain explanations come first, technical details are expandable,
   category search remains available, and Privacy has its own `#privacy` anchor. No detection
   CTA appears in the About introduction. The workspace sidebar omits the former help-guide item.
+  Category search uses English guidance and an accessible suggestion list drawn only from
+  supported model names. Popular categories are offered on focus; typing narrows suggestions,
+  with keyboard and touch selection. Do not add language-specific example aliases to the UI.
 - Detection (Operate): camera/photo is the largest work region. Video and detection overlay remain
   one live view. A right rail prioritizes results, with real crop thumbnails and category counts,
   followed by detection settings. Thumbnails come from the immutable analyzed frame, not the live
@@ -71,6 +74,11 @@ Check one-click Dark/Light persistence, migration of legacy System choices, exam
 overlays, multiple objects, exact-frame saving, history/detail/analytics/settings, and logout.
 Inspect real pages at 1440, 768, and 390px. The two independent camera/result columns have
 content-driven heights; do not stretch an empty panel solely to align its bottom edge.
+The responsive regression matrix also covers 320–1440px at breakpoint boundaries in both
+themes with populated data. Below 380px, metrics become a single column so large counts and
+long names remain readable. Mobile workspace navigation acts as a dismissible modal drawer:
+background inert, keyboard focus contained/restored, body scroll locked, and contents scrollable
+within the dynamic viewport. Public Dashboard navigation uses a compact phone treatment.
 
 Landing inspection deliberately allows `still-page`: the annotation toggle supplies interaction,
 and camera video starts only after an explicit user action in the workspace. No decorative video

@@ -27,7 +27,7 @@
 .auth-form .auth-input>input:focus-visible{outline:none}
 .auth-input>.icon-btn{width:40px;height:40px;flex-shrink:0;margin-right:-7px}.auth-input>.icon-btn:hover{background:var(--raised)}
 .auth-form form>.btn{min-height:48px;display:flex;gap:11px;width:100%;margin-top:3px;font-size:14px;font-weight:650}
-.auth-form form>.btn>svg:first-child{margin-right:auto}.auth-form form>.btn>svg:last-child{margin-left:auto}
+.auth-form form>.btn{justify-content:center}.auth-form form>.btn>svg{flex-shrink:0}
 .auth-form .notice{margin:0;font-size:13px;overflow-wrap:anywhere}
 .auth-switch{margin-top:22px;font-size:13px;line-height:1.75;color:var(--muted)}.auth-switch a{font-weight:650;color:var(--accent);margin-left:4px}
 .auth-guest{margin-top:17px}.auth-guest>a{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;font-size:13px;color:var(--accent);min-height:30px}

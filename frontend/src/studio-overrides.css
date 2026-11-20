@@ -179,6 +179,29 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 
 .studio-landing .public-footer{border-top:0}
 
+/* Narrow screens keep real values readable and navigation inside the visible viewport. */
+.metrics>div{min-width:0}.metrics strong{overflow-wrap:anywhere}
+.sidebar-scrim{position:fixed;inset:0;z-index:29;background:var(--scrim);border-radius:0}
+.workspace aside{height:100dvh;overflow-y:auto;overscroll-behavior:contain}
+.workspace aside>*{flex-shrink:0}
+@media(max-width:700px){
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .metrics strong.text-value{font-size:20px;line-height:1.3}
+ .workspace .panel-heading{flex-wrap:wrap;row-gap:12px}
+ .workspace .segmented>button{min-height:44px}
+ .workspace input:not([type=range]):not([type=checkbox]),.workspace select{font-size:16px}
+ .workspace input[type=range]{height:44px}
+ .workspace .mobile-menu,.workspace .mobile-close,.account>.icon-btn{min-width:44px;min-height:44px}
+ .workspace .page-title>.btn{min-height:44px}
+}
+@media(max-width:380px){
+ .metrics{grid-template-columns:1fr}
+ .metrics>div{border-right:0;border-bottom:1px solid var(--border)}
+ .metrics>div:nth-child(3){border-bottom:1px solid var(--border)}
+ .metrics>div:last-child{border-bottom:0}
+ .pagination{gap:8px}.pagination>.btn{padding:9px 10px}.pagination>span{white-space:nowrap}
+}
+
 /* Compact appearance control: one icon toggles Light and Dark. */
 .theme-switch{display:inline-flex;flex-direction:row;gap:0}
 .theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}

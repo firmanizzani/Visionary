@@ -1,5 +1,29 @@
 # Verification
 
+## Mobile hardening and English category suggestions (20 November 2026)
+
+Final production verification passed **13 UI scenarios**, followed by **10 consecutive
+rapid Back/Forward navigation runs**. The UI suite covers populated public/workspace screens
+at 13 widths in both themes (286 combinations), keyboard and touch input, drawer dismissal,
+category suggestions, auth layout, theme persistence, and reduced/no-JavaScript fallbacks.
+The responsive matrix recorded no horizontal document overflow or uncaught page errors.
+
+Before the final public-search update, the complete **19-scenario browser suite** also passed,
+including actual ONNX inference, multi-object camera frames, real-service snapshot storage,
+history/details, analytics, account settings, session persistence and logout. The final source
+check reported **0 errors, 0 warnings**; **19 unit tests** and **6 backend tests** passed, and
+the production build completed. One backend warning belongs to the upstream test client.
+
+Fixed issues include the signed-in header overflowing narrow screens, large metrics expanding
+their columns, drawer focus/scroll/dismissal behavior, long canvas labels extending outside
+the image, and inconsistent mobile control sizing. A production regression exposed stale
+same-page history scroll positions: section traversal now restores its anchor, and scrollspy
+uses the actual viewport rather than an optimistic hash-derived state.
+
+Category search is English-only and offers genuine supported names. Keyboard selection,
+Escape dismissal and 320px touch selection were verified. No external inference or new model
+download is introduced. See `responsive-audit.md` for findings and device-testing limitations.
+
 ## Public navigation, About, and landing polish (19 November 2026)
 
 The landing page and About share a sticky public header and a structured Explore/Learn footer.

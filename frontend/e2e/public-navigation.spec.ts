@@ -13,6 +13,13 @@ test('public navigation stays visible and connects About, categories, and Privac
  await navigation.getByRole('link',{name:'How it works',exact:true}).click();
  await expect(navigation.getByRole('link',{name:'How it works',exact:true})).toHaveAttribute('aria-current','location');
  await page.goBack();
+ await expect(navigation.getByRole('link',{name:'Features',exact:true})).toHaveAttribute('aria-current','location').catch(async error=>{
+  console.log('Back navigation state',await page.evaluate(()=>({hash:location.hash,y:scrollY,features:document.getElementById('features')?.getBoundingClientRect().top,how:document.getElementById('how-it-works')?.getBoundingClientRect().top,active:document.querySelector('[aria-current]')?.textContent})));
+  throw error;
+ });
+ await page.goForward();
+ await expect(navigation.getByRole('link',{name:'How it works',exact:true})).toHaveAttribute('aria-current','location');
+ await page.goBack();
  await expect(navigation.getByRole('link',{name:'Features',exact:true})).toHaveAttribute('aria-current','location');
  // Scroll manually without changing the URL; active navigation must follow the content.
  await page.evaluate(()=>document.getElementById('how-it-works')!.scrollIntoView({block:'start'}));
@@ -31,7 +38,7 @@ test('public navigation stays visible and connects About, categories, and Privac
  await page.getByRole('navigation',{name:'Learn',exact:true}).getByRole('link',{name:'Privacy',exact:true}).click();
  await expect(page).toHaveURL(/\/about#privacy$/);
  await expect.poll(()=>page.locator('#privacy').evaluate(node=>node.getBoundingClientRect().top)).toBeGreaterThanOrEqual(96);
- await page.getByLabel('Search categories',{exact:true}).fill('dompet');
+ await page.getByLabel('Search categories',{exact:true}).fill('wallet');
  await expect(page.locator('.category-list')).toContainText('wallet');
  await page.getByLabel('Search categories',{exact:true}).fill('not-an-object-name-xyz');
  await expect(page.locator('.category-list')).toContainText('No matching category');
