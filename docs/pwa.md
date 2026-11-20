@@ -19,6 +19,11 @@ The manifest starts at `/dashboard`, uses a stable root ID, and includes 192px,
 512px, maskable, and Apple touch icons based on the existing brand mark. No new
 backend service, environment variable, or paid provider is required.
 
+The browser tab favicon follows the user's saved Light/Dark selection, including
+initial page load and changes made in another tab. Browser/window theme color
+follows that same selection. Installed Home Screen/desktop icons and the Apple
+touch icon retain the fixed dark brand identity; the manifest URL stays stable.
+
 ## Offline and updates
 
 The production service worker is registered by SvelteKit. It precaches only the

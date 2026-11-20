@@ -13,6 +13,7 @@ export function initializeTheme(){
  function apply(){
   const resolved=choice;
   document.documentElement.dataset.theme=resolved;
+  document.getElementById('app-favicon')?.setAttribute('href',resolved==='dark'?'/favicon.svg?v=2':'/favicon-light.svg?v=1');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',resolved==='dark'?'#171717':'#f3f5f5');
  }
  const storage=(event:StorageEvent)=>{if(event.key===key){const value=event.newValue;theme.set(value==='light'?'light':value==='system'&&!media.matches?'light':'dark');}};
