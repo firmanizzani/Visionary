@@ -231,6 +231,24 @@ validation report for v2 rather than interpreting the old 80-class results as a 
 
 ## Limits of verification
 
+Deployment setup verification on 20 November 2026: **22 Playwright scenarios passed**
+against the built frontend on port 5194 and the real backend on port 8005, through the
+same SvelteKit API proxy used in production. This included persistent login after a
+browser restart, actual browser model inference, Cloudinary save/delete, history,
+analytics, settings, responsive layouts and camera lifecycle checks. Svelte check had
+**0 errors and 0 warnings**; **23 frontend unit tests**, **2 deployment-validator tests**
+and **8 backend tests** passed. Neon was at migration **002 (head)**.
+
+Both the Node build and Vercel adapter output were checked. On Windows, a temporary
+ignored preload converted output-contained directory symlinks to directory junctions;
+no adapter or dependency source was modified. The resulting Vercel output included
+the API proxy function and every detector/verifier shard. Python 3.12 Linux wheels
+resolved for all runtime dependencies. These are local checks; actual HTTPS cookies,
+Vercel routing, cron execution and provider/account limits still need verification
+after the two production URLs exist. See [deployment.md](deployment.md).
+
+The following records describe the earlier baseline:
+
 Final production run on 19 November 2026: **4 Playwright scenarios passed**; Svelte check
 reported **0 errors, 0 warnings**; **4 frontend numerical tests passed**; **3 backend
 integration scenarios passed** (one upstream AnyIO deprecation warning). Production build

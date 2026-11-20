@@ -1,1 +1,6 @@
-{"version":2,"builds":[{"src":"api/index.py","use":"@vercel/python"}],"routes":[{"src":"/(.*)","dest":"api/index.py"}],"crons":[{"path":"/api/v1/internal/reconcile","schedule":"0 3 * * *"}]}
+{
+ "$schema":"https://openapi.vercel.sh/vercel.json",
+ "framework":"fastapi",
+ "functions":{"app/main.py":{"maxDuration":60,"excludeFiles":"{tests/**,.venv/**,__pycache__/**,.pytest_cache/**,.env,.env.*,**/*.db,**/*.log}"}},
+ "crons":[{"path":"/api/v1/internal/reconcile","schedule":"0 3 * * *"}]
+}

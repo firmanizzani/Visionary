@@ -1,0 +1,10 @@
+.env
+.env.*
+.venv/
+node_modules/
+.svelte-kit/
+.vercel/
+build/
+test-results/
+e2e/
+*.log
